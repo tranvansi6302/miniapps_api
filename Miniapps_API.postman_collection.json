@@ -1,0 +1,884 @@
+{
+	"info": {
+		"_postman_id": "c8e27c73-455b-4c2c-8182-0b8d2ebcb504",
+		"name": "Miniapps API - Supabase PostgreSQL",
+		"description": "Bộ tài liệu Postman Collection đầy đủ cho hệ thống quản lý Mini App kết nối với Supabase PostgreSQL.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/health",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"health"
+					]
+				},
+				"description": "Kiểm tra trạng thái hoạt động của Server API và kết nối đến Supabase Database."
+			},
+			"response": []
+		},
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Register Admin User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin_ejsc\",\n  \"password\": \"Password365@\",\n  \"full_name\": \"EJSC Admin\",\n  \"email\": \"admin@ejsc.com\",\n  \"avatar_url\": \"https://avatar.placeholder/admin\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Đăng ký tài khoản Admin mới cho nền tảng."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin_ejsc\",\n  \"password\": \"Password365@\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Đăng nhập hệ thống để nhận Access Token (15m) và Refresh Token (30d)."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/refresh",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"refresh"
+							]
+						},
+						"description": "Dùng Refresh Token hợp lệ để gia hạn thêm Access Token mới."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Đăng xuất khỏi hệ thống và hủy hiệu lực của Refresh Token trong Database."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Users",
+			"item": [
+				{
+					"name": "Get All Active Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users"
+							]
+						},
+						"description": "Lấy danh sách tất cả người dùng đang hoạt động (Công cộng - không cần Token)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"1"
+							]
+						},
+						"description": "Xem chi tiết một người dùng cụ thể theo ID (Công cộng - không cần Token)."
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"full_name\": \"Nguyễn Văn Siêu Sĩ\",\n  \"email\": \"sieusi@ejsc.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"1"
+							]
+						},
+						"description": "Cập nhật profile người dùng (Cho phép đổi mật khẩu nếu truyền thêm trường password - Yêu cầu Auth)."
+					},
+					"response": []
+				},
+				{
+					"name": "Soft Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"1"
+							]
+						},
+						"description": "Xóa mềm người dùng bằng cách chuyển trạng thái is_actived = false (Yêu cầu Auth)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Categories",
+			"item": [
+				{
+					"name": "Get Active Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/categories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"categories"
+							]
+						},
+						"description": "Lấy danh sách toàn bộ danh mục đang hoạt động (không cần login)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Category by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/categories/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"categories",
+								"1"
+							]
+						},
+						"description": "Lấy thông tin chi tiết của một danh mục cụ thể."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Categories (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/categories/all/admin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"categories",
+								"all",
+								"admin"
+							]
+						},
+						"description": "Lấy toàn bộ danh mục kể cả danh mục đã tắt (Công cộng - không cần login)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Category",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Ăn uống & Giải trí\",\n  \"code\": \"dining_fun\",\n  \"icon_url\": \"https://icon.placeholder/dining\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/categories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"categories"
+							]
+						},
+						"description": "Thêm một danh mục Mini App mới (Yêu cầu Auth)."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Category",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Ẩm thực & Giải trí\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/categories/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"categories",
+								"1"
+							]
+						},
+						"description": "Cập nhật thông tin danh mục theo ID (Yêu cầu Auth)."
+					},
+					"response": []
+				},
+				{
+					"name": "Soft Delete Category",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/categories/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"categories",
+								"1"
+							]
+						},
+						"description": "Xóa mềm danh mục (Yêu cầu Auth)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Mini Apps",
+			"item": [
+				{
+					"name": "Get Active Mini Apps",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/mini-apps?category_id=1&search=booking",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"mini-apps"
+							],
+							"query": [
+								{
+									"key": "category_id",
+									"value": "1"
+								},
+								{
+									"key": "search",
+									"value": "booking"
+								}
+							]
+						},
+						"description": "Lấy danh sách các Mini App đang hoạt động và không ẩn. Cho phép lọc theo category_id và search."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Mini App by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/mini-apps/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"mini-apps",
+								"1"
+							]
+						},
+						"description": "Lấy chi tiết một Mini App bằng database ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Mini App by App ID String",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/mini-apps/app-id/com.ejsc.booking",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"mini-apps",
+								"app-id",
+								"com.ejsc.booking"
+							]
+						},
+						"description": "Xem thông tin Mini App bằng chuỗi định danh duy nhất (ví dụ: com.ejsc.booking)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Mini App",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"app_id\": \"com.ejsc.booking\",\n  \"name\": \"EJSC Booking App\",\n  \"category_id\": 1,\n  \"short_description\": \"Ứng dụng đặt lịch phòng họp & xe đưa đón\",\n  \"description\": \"Chi tiết đầy đủ mô tả chức năng...\",\n  \"icon_url\": \"https://icon.placeholder/booking\",\n  \"url\": \"https://booking.ejsc.com\",\n  \"version\": \"1.0.0\",\n  \"requires_auth\": true,\n  \"is_hidden\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/mini-apps",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"mini-apps"
+							]
+						},
+						"description": "Thêm mới một Mini App (Yêu cầu Auth)."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Mini App",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"EJSC Booking & Meeting App\",\n  \"version\": \"1.0.1\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/mini-apps/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"mini-apps",
+								"1"
+							]
+						},
+						"description": "Cập nhật thông tin chi tiết một Mini App (Yêu cầu Auth)."
+					},
+					"response": []
+				},
+				{
+					"name": "Soft Delete Mini App",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/mini-apps/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"mini-apps",
+								"1"
+							]
+						},
+						"description": "Xóa mềm Mini App (Yêu cầu Auth)."
+					},
+					"response": []
+				},
+				{
+					"name": "Members Management",
+					"item": [
+						{
+							"name": "Get App Members",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/mini-apps/1/members?status=1",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"mini-apps",
+										"1",
+										"members"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "1"
+										}
+									]
+								},
+								"description": "Lấy danh sách các member được duyệt của Mini App (Công cộng - không cần login)."
+							},
+							"response": []
+						},
+						{
+							"name": "Bulk Add Members",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"user_ids\": [1, 2],\n  \"status\": 1\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/mini-apps/1/members",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"mini-apps",
+										"1",
+										"members"
+									]
+								},
+								"description": "Thêm hàng loạt user vào danh sách thành viên được duyệt của Mini App (Yêu cầu Auth)."
+							},
+							"response": []
+						},
+						{
+							"name": "Bulk Update Member Status",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"user_ids\": [1, 2],\n  \"status\": 2\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/mini-apps/1/members",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"mini-apps",
+										"1",
+										"members"
+									]
+								},
+								"description": "Cập nhật trạng thái hàng loạt thành viên (ví dụ 2: Tạm khóa - Yêu cầu Auth)."
+							},
+							"response": []
+						},
+						{
+							"name": "Bulk Soft Remove Members",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"user_ids\": [1, 2]\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/mini-apps/1/members",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"mini-apps",
+										"1",
+										"members"
+									]
+								},
+								"description": "Xóa mềm hàng loạt thành viên khỏi Mini App (status chuyển thành 3 - Yêu cầu Auth)."
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "5. Bridge Scripts",
+			"item": [
+				{
+					"name": "Get Active Scripts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/scripts?type=zalo",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"scripts"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "zalo"
+								}
+							]
+						},
+						"description": "Lấy danh sách các SDK Bridge Script đang hoạt động. Có thể tìm kiếm theo type."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Script by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/scripts/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"scripts",
+								"1"
+							]
+						},
+						"description": "Lấy chi tiết một SDK Bridge Script theo ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Script by Type",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/scripts/type/zalo_sdk",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"scripts",
+								"type",
+								"zalo_sdk"
+							]
+						},
+						"description": "Lấy chi tiết cấu hình script theo tên định danh loại."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Bridge Script",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"type\": \"zalo_sdk\",\n  \"version\": \"2.5.0\",\n  \"description\": \"Zalo Mini App Native Bridge Adapter\",\n  \"content\": \"(function() { window.ZaloJSBridge = { call: function(func, args) { console.log(\\'Called Zalo native function:\\', func, args); } } })();\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/scripts",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"scripts"
+							]
+						},
+						"description": "Tạo mới một cấu hình Bridge SDK (Yêu cầu Auth)."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Bridge Script",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"version\": \"2.5.1\",\n  \"description\": \"Cập nhật sửa lỗi kết nối camera Native Bridge\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/scripts/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"scripts",
+								"1"
+							]
+						},
+						"description": "Cập nhật thông tin hoặc nội dung mã của một SDK Bridge (Yêu cầu Auth)."
+					},
+					"response": []
+				},
+				{
+					"name": "Soft Delete Bridge Script",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/scripts/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"scripts",
+								"1"
+							]
+						},
+						"description": "Xóa mềm SDK Bridge (is_actived chuyển thành false - Yêu cầu Auth)."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "your_access_token_here",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "your_refresh_token_here",
+			"type": "string"
+		}
+	]
+}
