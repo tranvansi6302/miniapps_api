@@ -91,6 +91,29 @@ class MiniAppService {
     return { ...app, id: parseInt(app.id), category_id: parseInt(app.category_id) };
   }
 
+  async checkAccessByAppId(appId, userId) {
+    // Check app exists
+    const appCheck = await db.query(
+      `SELECT id FROM mini_apps WHERE app_id = $1`,
+      [appId]
+    );
+    if (appCheck.rows.length === 0) {
+      throw new Error("Mini App not found");
+    }
+    const app = appCheck.rows[0];
+
+    // Check if user is a member
+    const memberCheck = await db.query(
+      `SELECT id FROM mini_app_members WHERE mini_app_id = $1 AND user_id = $2 AND status = 1`,
+      [app.id, userId]
+    );
+    if (memberCheck.rows.length === 0) {
+      throw new Error("Access denied");
+    }
+    
+    return this.getByAppId(appId);
+  }
+
   async update(id, data) {
     // Check if exists
     const checkResult = await db.query("SELECT id FROM mini_apps WHERE id = $1", [id]);
@@ -174,15 +197,24 @@ class MiniAppService {
     return { ...app, id: parseInt(app.id) };
   }
 
-  async list({ category_id, search, include_hidden, include_inactive } = {}) {
+  async list({ category_id, search, include_hidden, include_inactive, user_id, mine } = {}) {
     let query = `
       SELECT m.*, c.name as category_name 
       FROM mini_apps m
       JOIN mini_app_categories c ON m.category_id = c.id
-      WHERE 1=1
     `;
     const values = [];
     let idx = 1;
+
+    if (mine === "true" || mine === true) {
+      if (!user_id) {
+        throw new Error("User ID is required to list my apps");
+      }
+      query += ` JOIN mini_app_members mam ON mam.mini_app_id = m.id AND mam.status = 1 AND mam.user_id = $${idx++}`;
+      values.push(user_id);
+    }
+
+    query += ` WHERE 1=1`;
 
     // Filter inactive by default
     if (include_inactive !== "true" && include_inactive !== true) {

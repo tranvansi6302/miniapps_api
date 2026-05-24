@@ -14,6 +14,7 @@ router.get("/:mini_app_id/members", memberController.listMembers);
 router.post("/", authenticateToken, miniAppController.create);
 router.put("/:id", authenticateToken, miniAppController.update);
 router.delete("/:id", authenticateToken, miniAppController.softDelete);
+router.get("/app-id/:appId/check-access", authenticateToken, miniAppController.checkAccessByAppId);
 
 // Protected member endpoints (nested under mini-apps)
 router.post("/:mini_app_id/members", authenticateToken, memberController.bulkAdd);
