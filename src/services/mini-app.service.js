@@ -14,7 +14,8 @@ class MiniAppService {
     is_hidden,
     is_actived,
     terms_url,
-    privacy_policy_url
+    privacy_policy_url,
+    permissions = []
   }) {
     // Check if app_id already exists
     const checkAppId = await db.query("SELECT id FROM mini_apps WHERE app_id = $1", [app_id]);
@@ -32,38 +33,63 @@ class MiniAppService {
     const isHiddenVal = is_hidden !== undefined ? is_hidden : true;
     const isActiveVal = is_actived !== undefined ? is_actived : true;
 
-    const result = await db.query(
-      `INSERT INTO mini_apps (
-        app_id, name, category_id, short_description, description, 
-        icon_url, url, version, requires_auth, is_hidden, 
-        is_actived, terms_url, privacy_policy_url
-      )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-       RETURNING *`,
-      [
-        app_id,
-        name,
-        category_id,
-        short_description,
-        description,
-        icon_url,
-        url,
-        version,
-        requiresAuthVal,
-        isHiddenVal,
-        isActiveVal,
-        terms_url,
-        privacy_policy_url
-      ]
-    );
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
+      const result = await client.query(
+        `INSERT INTO mini_apps (
+          app_id, name, category_id, short_description, description, 
+          icon_url, url, version, requires_auth, is_hidden, 
+          is_actived, terms_url, privacy_policy_url
+        )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         RETURNING *`,
+        [
+          app_id,
+          name,
+          category_id,
+          short_description,
+          description,
+          icon_url,
+          url,
+          version,
+          requiresAuthVal,
+          isHiddenVal,
+          isActiveVal,
+          terms_url,
+          privacy_policy_url
+        ]
+      );
 
-    const app = result.rows[0];
-    return { ...app, id: parseInt(app.id), category_id: parseInt(app.category_id) };
+      const app = result.rows[0];
+
+      if (permissions && Array.isArray(permissions) && permissions.length > 0) {
+        for (const p of permissions) {
+          await client.query(
+            "INSERT INTO mini_app_permissions (mini_app_id, permission_code) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+            [app.id, p]
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+      return { ...app, id: parseInt(app.id), category_id: parseInt(app.category_id), permissions };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   async getById(id) {
     const result = await db.query(
-      `SELECT m.*, c.name as category_name 
+      `SELECT m.*, c.name as category_name,
+       COALESCE(
+         (SELECT json_agg(p.permission_code) FROM mini_app_permissions p WHERE p.mini_app_id = m.id), 
+         '[]'::json
+       ) as permissions
        FROM mini_apps m 
        JOIN mini_app_categories c ON m.category_id = c.id 
        WHERE m.id = $1`,
@@ -78,7 +104,11 @@ class MiniAppService {
 
   async getByAppId(appId) {
     const result = await db.query(
-      `SELECT m.*, c.name as category_name 
+      `SELECT m.*, c.name as category_name,
+       COALESCE(
+         (SELECT json_agg(p.permission_code) FROM mini_app_permissions p WHERE p.mini_app_id = m.id), 
+         '[]'::json
+       ) as permissions
        FROM mini_apps m 
        JOIN mini_app_categories c ON m.category_id = c.id 
        WHERE m.app_id = $1`,
@@ -162,21 +192,49 @@ class MiniAppService {
       }
     }
 
-    if (fields.length === 0) {
-      return this.getById(id);
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+
+      let app;
+      if (fields.length > 0) {
+        values.push(id);
+        const query = `
+          UPDATE mini_apps 
+          SET ${fields.join(", ")} 
+          WHERE id = $${idx} 
+          RETURNING *
+        `;
+        const result = await client.query(query, values);
+        app = result.rows[0];
+      } else {
+        const result = await client.query("SELECT * FROM mini_apps WHERE id = $1", [id]);
+        app = result.rows[0];
+      }
+
+      if (data.permissions !== undefined && Array.isArray(data.permissions)) {
+        // Xóa permissions cũ
+        await client.query("DELETE FROM mini_app_permissions WHERE mini_app_id = $1", [id]);
+        
+        // Thêm permissions mới
+        if (data.permissions.length > 0) {
+          for (const p of data.permissions) {
+            await client.query(
+              "INSERT INTO mini_app_permissions (mini_app_id, permission_code) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+              [id, p]
+            );
+          }
+        }
+      }
+
+      await client.query('COMMIT');
+      return this.getById(id); // Lấy lại object sau khi update (bao gồm permissions và category_name)
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
-
-    values.push(id);
-    const query = `
-      UPDATE mini_apps 
-      SET ${fields.join(", ")} 
-      WHERE id = $${idx} 
-      RETURNING *
-    `;
-
-    const result = await db.query(query, values);
-    const app = result.rows[0];
-    return { ...app, id: parseInt(app.id), category_id: parseInt(app.category_id) };
   }
 
   async softDelete(id) {
@@ -199,7 +257,11 @@ class MiniAppService {
 
   async list({ category_id, search, include_hidden, include_inactive, user_id, mine } = {}) {
     let query = `
-      SELECT m.*, c.name as category_name 
+      SELECT m.*, c.name as category_name,
+      COALESCE(
+        (SELECT json_agg(p.permission_code) FROM mini_app_permissions p WHERE p.mini_app_id = m.id), 
+        '[]'::json
+      ) as permissions
       FROM mini_apps m
       JOIN mini_app_categories c ON m.category_id = c.id
     `;

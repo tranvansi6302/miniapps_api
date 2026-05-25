@@ -72,3 +72,27 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 CREATE INDEX IF NOT EXISTS idx_mini_apps_category ON mini_apps(category_id);
 CREATE INDEX IF NOT EXISTS idx_mini_app_members_app_user ON mini_app_members(mini_app_id, user_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+
+-- 7. Bảng danh mục Quyền (Permissions)
+CREATE TABLE IF NOT EXISTS permissions (
+  code VARCHAR(100) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Chèn dữ liệu mồi cho các quyền cơ bản (Nghiệp vụ bỏ qua nếu đã tồn tại)
+INSERT INTO permissions (code, name, description) VALUES
+  ('camera', 'Truy cập Camera', 'Cho phép ứng dụng sử dụng máy ảnh để chụp hình, quay video hoặc quét mã.'),
+  ('location', 'Vị trí (Location)', 'Cho phép ứng dụng truy cập thông tin vị trí địa lý của thiết bị.'),
+  ('storage', 'Lưu trữ (Storage)', 'Cho phép ứng dụng đọc và ghi tệp tin trên thiết bị lưu trữ.'),
+  ('microphone', 'Microphone', 'Cho phép ứng dụng sử dụng micro để ghi âm thanh.'),
+  ('push_notification', 'Thông báo đẩy (Push Notifications)', 'Cho phép ứng dụng gửi thông báo trực tiếp đến thiết bị người dùng.')
+ON CONFLICT (code) DO NOTHING;
+
+-- 8. Bảng Mapping Quyền và Mini App (Many-to-Many)
+CREATE TABLE IF NOT EXISTS mini_app_permissions (
+  mini_app_id BIGINT NOT NULL REFERENCES mini_apps(id) ON DELETE CASCADE,
+  permission_code VARCHAR(100) NOT NULL REFERENCES permissions(code) ON DELETE CASCADE,
+  PRIMARY KEY (mini_app_id, permission_code)
+);
