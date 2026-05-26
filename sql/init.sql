@@ -30,11 +30,9 @@ CREATE TABLE IF NOT EXISTS mini_apps (
 -- 3. Bảng mã cấu hình Bridge Scripts
 CREATE TABLE IF NOT EXISTS bridge_scripts (
   id BIGSERIAL PRIMARY KEY,
-  type VARCHAR(100) NOT NULL UNIQUE,
   version VARCHAR(50) NOT NULL,
   description TEXT,
   content TEXT NOT NULL,
-  is_actived BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

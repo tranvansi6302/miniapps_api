@@ -34,7 +34,8 @@
       "is_hidden": false,
       "is_actived": true,
       "terms_url": "...",
-      "privacy_policy_url": "..."
+      "privacy_policy_url": "...",
+      "permissions": ["camera", "location"]
     }
   ],
   "message": "Mini Apps fetched successfully"
@@ -66,41 +67,61 @@
 
 ---
 
-### 5. Lấy danh sách Bridge Scripts
+### 5. Lấy Bridge Script đang hoạt động (Active)
 - **URL**: `/scripts`
 - **Method**: `GET` (Public)
-- **Input (Query Params)**:
-  - `type` (string): Lọc theo loại script (tìm kiếm chứa từ khoá).
-  - `include_inactive` (boolean): Lấy cả những script ngừng hoạt động.
-- **Output (JSON)**:
+- **Output (JSON)**: Trả về Object chi tiết của phiên bản Script mới nhất (hoạt động).
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "version": "1.1.0",
+    "description": "Cập nhật hàm callBridge API",
+    "content": "console.log('v1.1.0');",
+    "created_at": "2026-05-26T03:00:00.000Z"
+  },
+  "message": "Active bridge script fetched successfully"
+}
+```
+
+### 6. Lấy lịch sử các phiên bản Bridge Script
+- **URL**: `/scripts/history`
+- **Method**: `GET` (Public)
+- **Output (JSON)**: Trả về danh sách các phiên bản đã thay đổi (không bao gồm trường `content` để giảm dung lượng tải).
 ```json
 {
   "success": true,
   "data": [
     {
+      "id": 2,
+      "version": "1.1.0",
+      "description": "Cập nhật hàm callBridge API",
+      "created_at": "2026-05-26T03:00:00.000Z"
+    },
+    {
       "id": 1,
-      "type": "SDK",
       "version": "1.0.0",
-      "description": "Bộ khung SDK chính",
-      "content": "(function() { ... })();",
-      "is_actived": true,
-      "created_at": "2026-01-01T00:00:00.000Z"
+      "description": "First initial version",
+      "created_at": "2026-05-26T02:50:00.000Z"
     }
   ],
-  "message": "Bridge scripts fetched successfully"
+  "message": "Bridge scripts history fetched successfully"
 }
 ```
 
-### 6. Lấy chi tiết Bridge Script bằng ID
+### 7. Lấy chi tiết phiên bản Bridge Script bằng ID
 - **URL**: `/scripts/:id`
 - **Method**: `GET` (Public)
 - **Input (Path Params)**:
-  - `id` (number): ID gốc của Script.
-- **Output (JSON)**: Trả về `data` là Object chứa chi tiết thông tin 1 Bridge Script.
+  - `id` (number): ID của phiên bản trong database.
+- **Output (JSON)**: Trả về `data` là Object chứa đầy đủ thông tin của phiên bản chỉ định (bao gồm `content`).
 
-### 7. Lấy chi tiết Bridge Script bằng Type
-- **URL**: `/scripts/type/:type`
-- **Method**: `GET` (Public)
-- **Input (Path Params)**:
-  - `type` (string): Loại script (Khớp chính xác tên).
-- **Output (JSON)**: Trả về `data` là Object chứa chi tiết thông tin 1 Bridge Script.
+### 8. Tạo phiên bản Bridge Script mới
+- **URL**: `/scripts`
+- **Method**: `POST` (Protected - Yêu cầu Token)
+- **Body (JSON)**:
+  - `version` (string, bắt buộc): Số phiên bản (ví dụ: "1.2.0"). Phải là duy nhất không trùng lặp.
+  - `description` (string, không bắt buộc): Mô tả các thay đổi trong phiên bản này.
+  - `content` (string, bắt buộc): Nội dung mã nguồn JavaScript của script.
+- **Output (JSON)**: Trả về `data` là Object phiên bản vừa được tạo.

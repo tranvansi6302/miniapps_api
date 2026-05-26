@@ -4,17 +4,26 @@ const responseHelper = require("../utils/response.helper");
 class ScriptController {
   async create(req, res, next) {
     try {
-      const { type, version, description, content, is_actived } = req.body;
-      if (!type || !version || !content) {
-        return responseHelper.error(res, "Type, version and content are required", null, 400);
+      const { version, description, content } = req.body;
+      if (!version || !content) {
+        return responseHelper.error(res, "Version and content are required", null, 400);
       }
 
-      const script = await scriptService.create({ type, version, description, content, is_actived });
-      return responseHelper.success(res, script, "Bridge script created successfully", 201);
+      const script = await scriptService.create({ version, description, content });
+      return responseHelper.success(res, script, "New bridge script version created successfully", 201);
     } catch (error) {
-      if (error.message === "Bridge script with this type already exists") {
+      if (error.message === "Bridge script with this version already exists") {
         return responseHelper.error(res, error.message, null, 400);
       }
+      next(error);
+    }
+  }
+
+  async getActive(req, res, next) {
+    try {
+      const script = await scriptService.getActive();
+      return responseHelper.success(res, script, "Active bridge script fetched successfully");
+    } catch (error) {
       next(error);
     }
   }
@@ -23,64 +32,19 @@ class ScriptController {
     try {
       const { id } = req.params;
       const script = await scriptService.getById(id);
-      return responseHelper.success(res, script, "Bridge script fetched successfully");
+      return responseHelper.success(res, script, "Bridge script version fetched successfully");
     } catch (error) {
-      if (error.message === "Bridge script not found") {
+      if (error.message === "Bridge script version not found") {
         return responseHelper.error(res, error.message, null, 404);
       }
       next(error);
     }
   }
 
-  async getByType(req, res, next) {
+  async getHistory(req, res, next) {
     try {
-      const { type } = req.params;
-      const script = await scriptService.getByType(type);
-      return responseHelper.success(res, script, "Bridge script fetched successfully");
-    } catch (error) {
-      if (error.message === "Bridge script not found") {
-        return responseHelper.error(res, error.message, null, 404);
-      }
-      next(error);
-    }
-  }
-
-  async update(req, res, next) {
-    try {
-      const { id } = req.params;
-      const { type, version, description, content, is_actived } = req.body;
-
-      const script = await scriptService.update(id, { type, version, description, content, is_actived });
-      return responseHelper.success(res, script, "Bridge script updated successfully");
-    } catch (error) {
-      if (error.message === "Bridge script not found") {
-        return responseHelper.error(res, error.message, null, 404);
-      }
-      if (error.message === "Bridge script with this type already exists") {
-        return responseHelper.error(res, error.message, null, 400);
-      }
-      next(error);
-    }
-  }
-
-  async softDelete(req, res, next) {
-    try {
-      const { id } = req.params;
-      const script = await scriptService.softDelete(id);
-      return responseHelper.success(res, script, "Bridge script soft-deleted successfully");
-    } catch (error) {
-      if (error.message === "Bridge script not found") {
-        return responseHelper.error(res, error.message, null, 404);
-      }
-      next(error);
-    }
-  }
-
-  async list(req, res, next) {
-    try {
-      const { type, include_inactive } = req.query;
-      const scripts = await scriptService.list({ type, include_inactive });
-      return responseHelper.success(res, scripts, "Bridge scripts fetched successfully");
+      const scripts = await scriptService.getHistory();
+      return responseHelper.success(res, scripts, "Bridge scripts history fetched successfully");
     } catch (error) {
       next(error);
     }
