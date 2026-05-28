@@ -105,8 +105,9 @@ CREATE TABLE IF NOT EXISTS menus (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Chèn dữ liệu cho 4 menu cơ bản ban đầu
+-- Chèn dữ liệu cho các menu cơ bản ban đầu
 INSERT INTO menus (key, label) VALUES
+  ('dashboard', 'Tổng quan'),
   ('mini-apps', 'Ứng dụng Mini App'),
   ('categories', 'Danh mục Mini App'),
   ('users', 'Quản lý Người dùng'),
