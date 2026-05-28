@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS mini_apps (
   is_actived BOOLEAN NOT NULL DEFAULT TRUE,
   terms_url TEXT,
   privacy_policy_url TEXT,
+  file_path TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS users (
   full_name VARCHAR(255) NOT NULL,
   email VARCHAR(255),
   avatar_url TEXT,
+  menu_permissions JSONB NOT NULL DEFAULT '{}',
   is_actived BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -94,3 +96,62 @@ CREATE TABLE IF NOT EXISTS mini_app_permissions (
   permission_code VARCHAR(100) NOT NULL REFERENCES permissions(code) ON DELETE CASCADE,
   PRIMARY KEY (mini_app_id, permission_code)
 );
+
+-- 9. Bảng Menu động để phân quyền
+CREATE TABLE IF NOT EXISTS menus (
+  id BIGSERIAL PRIMARY KEY,
+  key VARCHAR(100) NOT NULL UNIQUE,
+  label VARCHAR(255) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Chèn dữ liệu cho 4 menu cơ bản ban đầu
+INSERT INTO menus (key, label) VALUES
+  ('mini-apps', 'Ứng dụng Mini App'),
+  ('categories', 'Danh mục Mini App'),
+  ('users', 'Quản lý Người dùng'),
+  ('scripts', 'SDK Bridge Scripts')
+ON CONFLICT (key) DO NOTHING;
+
+-- 10. Bổ sung trường file_path vào bảng mini_apps nếu chưa tồn tại (Dành cho DB đã chạy từ trước)
+ALTER TABLE mini_apps ADD COLUMN IF NOT EXISTS file_path TEXT;
+
+-- 11. Bảng lưu trữ lịch sử các bản build / phiên bản
+CREATE TABLE IF NOT EXISTS mini_app_builds (
+  id BIGSERIAL PRIMARY KEY,
+  mini_app_id BIGINT NOT NULL REFERENCES mini_apps(id) ON DELETE CASCADE,
+  version VARCHAR(50) NOT NULL,
+  changelog TEXT,
+  reviewer_notes TEXT,
+  status INT NOT NULL DEFAULT 1, -- 1: Chờ duyệt, 2: Đã duyệt, 3: Từ chối
+  file_path TEXT, -- Đường dẫn tệp zip (HTML/JS/CSS) của bản build này
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 12. Bảng Vai trò của Thành viên trong Mini App
+CREATE TABLE IF NOT EXISTS mini_app_roles (
+  code VARCHAR(100) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 13. Bảng Mapping Quyền của Vai trò
+CREATE TABLE IF NOT EXISTS mini_app_role_permissions (
+  role_code VARCHAR(100) NOT NULL REFERENCES mini_app_roles(code) ON DELETE CASCADE,
+  permission_code VARCHAR(100) NOT NULL REFERENCES permissions(code) ON DELETE CASCADE,
+  PRIMARY KEY (role_code, permission_code)
+);
+
+-- 14. Bảng Danh mục Quyền chi tiết của Thành viên
+CREATE TABLE IF NOT EXISTS mini_app_member_permissions (
+  code VARCHAR(100) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 15. Bổ sung trường file_path vào bảng mini_app_builds nếu chưa tồn tại (Dành cho DB đã chạy từ trước)
+ALTER TABLE mini_app_builds ADD COLUMN IF NOT EXISTS file_path TEXT;
+
+

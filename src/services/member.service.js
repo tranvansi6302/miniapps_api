@@ -1,7 +1,7 @@
 const db = require("../db");
 
 class MemberService {
-  async bulkAdd(mini_app_id, user_ids, status = 1) {
+  async bulkAdd(mini_app_id, user_ids, status = 1, role_code = 'tester') {
     // Verify Mini App exists
     const appCheck = await db.query("SELECT id FROM mini_apps WHERE id = $1", [mini_app_id]);
     if (appCheck.rows.length === 0) {
@@ -33,22 +33,22 @@ class MemberService {
 
         let memberRow;
         if (memberCheck.rows.length > 0) {
-          // Update existing member status
+          // Update existing member status and role_code
           const updateRes = await client.query(
             `UPDATE mini_app_members 
-             SET status = $1 
-             WHERE mini_app_id = $2 AND user_id = $3 
-             RETURNING id, mini_app_id, user_id, status, added_at`,
-            [status, mini_app_id, userId]
+             SET status = $1, role_code = $2 
+             WHERE mini_app_id = $3 AND user_id = $4 
+             RETURNING id, mini_app_id, user_id, status, role_code, added_at`,
+            [status, role_code, mini_app_id, userId]
           );
           memberRow = updateRes.rows[0];
         } else {
           // Insert new member record
           const insertRes = await client.query(
-            `INSERT INTO mini_app_members (mini_app_id, user_id, status)
-             VALUES ($1, $2, $3)
-             RETURNING id, mini_app_id, user_id, status, added_at`,
-            [mini_app_id, userId, status]
+            `INSERT INTO mini_app_members (mini_app_id, user_id, status, role_code)
+             VALUES ($1, $2, $3, $4)
+             RETURNING id, mini_app_id, user_id, status, role_code, added_at`,
+            [mini_app_id, userId, status, role_code]
           );
           memberRow = insertRes.rows[0];
         }
@@ -57,7 +57,9 @@ class MemberService {
           ...memberRow,
           id: parseInt(memberRow.id),
           mini_app_id: parseInt(memberRow.mini_app_id),
-          user_id: parseInt(memberRow.user_id)
+          user_id: parseInt(memberRow.user_id),
+          role: memberRow.role_code,
+          role_code: memberRow.role_code
         });
       }
 
@@ -72,10 +74,14 @@ class MemberService {
   }
 
   async bulkRemove(mini_app_id, user_ids) {
-    return this.bulkUpdateStatus(mini_app_id, user_ids, 3); // 3 represents 'Deleted' status
+    return this.bulkUpdate(mini_app_id, user_ids, { status: 3 }); // 3 represents 'Deleted' status
   }
 
   async bulkUpdateStatus(mini_app_id, user_ids, status) {
+    return this.bulkUpdate(mini_app_id, user_ids, { status });
+  }
+
+  async bulkUpdate(mini_app_id, user_ids, { status, role, role_code }) {
     // Verify Mini App exists
     const appCheck = await db.query("SELECT id FROM mini_apps WHERE id = $1", [mini_app_id]);
     if (appCheck.rows.length === 0) {
@@ -86,19 +92,43 @@ class MemberService {
       throw new Error("user_ids must be a non-empty array");
     }
 
-    const result = await db.query(
-      `UPDATE mini_app_members 
-       SET status = $1 
-       WHERE mini_app_id = $2 AND user_id = ANY($3::bigint[]) 
-       RETURNING id, mini_app_id, user_id, status, added_at`,
-      [status, mini_app_id, user_ids]
-    );
+    const fields = [];
+    const values = [];
+    let idx = 1;
 
+    if (status !== undefined) {
+      fields.push(`status = $${idx++}`);
+      values.push(status);
+    }
+
+    const targetRole = role_code !== undefined ? role_code : role;
+    if (targetRole !== undefined) {
+      fields.push(`role_code = $${idx++}`);
+      values.push(targetRole);
+    }
+
+    if (fields.length === 0) {
+      return [];
+    }
+
+    values.push(mini_app_id);
+    values.push(user_ids);
+
+    const query = `
+      UPDATE mini_app_members 
+      SET ${fields.join(", ")} 
+      WHERE mini_app_id = $${idx++} AND user_id = ANY($${idx}::bigint[]) 
+      RETURNING id, mini_app_id, user_id, status, role_code, added_at
+    `;
+
+    const result = await db.query(query, values);
     return result.rows.map(row => ({
       ...row,
       id: parseInt(row.id),
       mini_app_id: parseInt(row.mini_app_id),
-      user_id: parseInt(row.user_id)
+      user_id: parseInt(row.user_id),
+      role: row.role_code,
+      role_code: row.role_code
     }));
   }
 
@@ -110,7 +140,7 @@ class MemberService {
     }
 
     let query = `
-      SELECT m.id as member_id, m.status, m.added_at, 
+      SELECT m.id as member_id, m.status, m.added_at, m.role_code, 
              u.id as user_id, u.username, u.full_name, u.email, u.avatar_url
       FROM mini_app_members m
       JOIN users u ON m.user_id = u.id
@@ -133,6 +163,8 @@ class MemberService {
       full_name: row.full_name,
       email: row.email,
       avatar_url: row.avatar_url,
+      role: row.role_code,
+      role_code: row.role_code,
       status: row.status,
       added_at: row.added_at
     }));

@@ -18,6 +18,7 @@ class MiniAppController {
         is_actived,
         terms_url,
         privacy_policy_url,
+        file_path,
         permissions
       } = req.body;
 
@@ -39,6 +40,7 @@ class MiniAppController {
         is_actived,
         terms_url,
         privacy_policy_url,
+        file_path,
         permissions
       });
 
@@ -136,6 +138,27 @@ class MiniAppController {
         mine
       });
       return responseHelper.success(res, apps, "Mini Apps fetched successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getRolesMetadata(req, res, next) {
+    try {
+      const roles = await miniAppService.getRolesMetadata();
+      return responseHelper.success(res, roles, "Roles metadata fetched successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async uploadZip(req, res, next) {
+    try {
+      if (!req.file) {
+        return responseHelper.error(res, "No file uploaded or invalid file format. Only .zip is allowed.", null, 400);
+      }
+      const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+      return responseHelper.success(res, { url: fileUrl }, "File uploaded successfully");
     } catch (error) {
       next(error);
     }

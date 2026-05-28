@@ -15,6 +15,14 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, "../uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+// Serve static uploads folder
+app.use("/uploads", express.static(uploadsDir));
+
 // Auto-initialize Database Schema (Tables and Indexes)
 async function initDb() {
   try {

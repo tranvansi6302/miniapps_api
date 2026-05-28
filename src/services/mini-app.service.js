@@ -15,6 +15,7 @@ class MiniAppService {
     is_actived,
     terms_url,
     privacy_policy_url,
+    file_path,
     permissions = []
   }) {
     // Check if app_id already exists
@@ -41,9 +42,9 @@ class MiniAppService {
         `INSERT INTO mini_apps (
           app_id, name, category_id, short_description, description, 
           icon_url, url, version, requires_auth, is_hidden, 
-          is_actived, terms_url, privacy_policy_url
+          is_actived, terms_url, privacy_policy_url, file_path
         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          RETURNING *`,
         [
           app_id,
@@ -58,7 +59,8 @@ class MiniAppService {
           isHiddenVal,
           isActiveVal,
           terms_url,
-          privacy_policy_url
+          privacy_policy_url,
+          file_path
         ]
       );
 
@@ -168,7 +170,8 @@ class MiniAppService {
       "is_hidden",
       "is_actived",
       "terms_url",
-      "privacy_policy_url"
+      "privacy_policy_url",
+      "file_path"
     ];
 
     for (const field of allowedFields) {
@@ -307,6 +310,21 @@ class MiniAppService {
       id: parseInt(row.id),
       category_id: parseInt(row.category_id)
     }));
+  }
+
+  async getRolesMetadata() {
+    const result = await db.query(`
+      SELECT r.code, r.name, r.description,
+             COALESCE(
+               (SELECT json_agg(rp.permission_code) 
+                FROM mini_app_role_permissions rp 
+                WHERE rp.role_code = r.code), 
+               '[]'::json
+             ) as permissions
+      FROM mini_app_roles r
+      ORDER BY r.created_at ASC
+    `);
+    return result.rows;
   }
 }
 

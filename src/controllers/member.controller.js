@@ -5,14 +5,16 @@ class MemberController {
   async bulkAdd(req, res, next) {
     try {
       const { mini_app_id } = req.params;
-      const { user_ids, status } = req.body;
+      const { user_ids, status, role, role_code } = req.body;
 
       if (!user_ids || !Array.isArray(user_ids) || user_ids.length === 0) {
         return responseHelper.error(res, "user_ids must be a non-empty array", null, 400);
       }
 
       const statusVal = status !== undefined ? parseInt(status) : 1;
-      const result = await memberService.bulkAdd(parseInt(mini_app_id), user_ids, statusVal);
+      const roleVal = role_code !== undefined ? role_code : (role !== undefined ? role : 'tester');
+      
+      const result = await memberService.bulkAdd(parseInt(mini_app_id), user_ids, statusVal, roleVal);
 
       return responseHelper.success(res, result, "Members added successfully", 201);
     } catch (error) {
@@ -26,18 +28,19 @@ class MemberController {
   async bulkUpdateStatus(req, res, next) {
     try {
       const { mini_app_id } = req.params;
-      const { user_ids, status } = req.body;
+      const { user_ids, status, role, role_code } = req.body;
 
       if (!user_ids || !Array.isArray(user_ids) || user_ids.length === 0) {
         return responseHelper.error(res, "user_ids must be a non-empty array", null, 400);
       }
 
-      if (status === undefined) {
-        return responseHelper.error(res, "status is required", null, 400);
+      if (status === undefined && role === undefined && role_code === undefined) {
+        return responseHelper.error(res, "Either status, role, or role_code must be provided", null, 400);
       }
 
-      const result = await memberService.bulkUpdateStatus(parseInt(mini_app_id), user_ids, parseInt(status));
-      return responseHelper.success(res, result, "Member statuses updated successfully");
+      const statusVal = status !== undefined ? parseInt(status) : undefined;
+      const result = await memberService.bulkUpdate(parseInt(mini_app_id), user_ids, { status: statusVal, role, role_code });
+      return responseHelper.success(res, result, "Members updated successfully");
     } catch (error) {
       if (error.message === "Mini App not found") {
         return responseHelper.error(res, error.message, null, 404);

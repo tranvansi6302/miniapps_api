@@ -27,14 +27,15 @@ class UserController {
   async update(req, res, next) {
     try {
       const { id } = req.params;
-      const { username, password, full_name, email, avatar_url, is_actived } = req.body;
+      const { username, password, full_name, fullName, email, avatar_url, menu_permissions, is_actived } = req.body;
 
       const user = await userService.update(id, {
         username,
         password,
-        full_name,
+        full_name: full_name !== undefined ? full_name : fullName,
         email,
         avatar_url,
+        menu_permissions,
         is_actived
       });
 

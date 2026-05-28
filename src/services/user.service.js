@@ -4,7 +4,7 @@ const db = require("../db");
 class UserService {
   async getAllActive() {
     const result = await db.query(
-      `SELECT id, username, full_name, email, avatar_url, is_actived, created_at 
+      `SELECT id, username, full_name, email, avatar_url, menu_permissions, is_actived, created_at 
        FROM users 
        WHERE is_actived = true 
        ORDER BY id DESC`
@@ -14,7 +14,7 @@ class UserService {
 
   async getById(id) {
     const result = await db.query(
-      `SELECT id, username, full_name, email, avatar_url, is_actived, created_at 
+      `SELECT id, username, full_name, email, avatar_url, menu_permissions, is_actived, created_at 
        FROM users 
        WHERE id = $1`,
       [id]
@@ -26,7 +26,7 @@ class UserService {
     return { ...user, id: parseInt(user.id) };
   }
 
-  async update(id, { username, password, full_name, email, avatar_url, is_actived }) {
+  async update(id, { username, password, full_name, email, avatar_url, menu_permissions, is_actived }) {
     // Check user existence
     const checkResult = await db.query("SELECT id FROM users WHERE id = $1", [id]);
     if (checkResult.rows.length === 0) {
@@ -70,6 +70,11 @@ class UserService {
       values.push(avatar_url);
     }
 
+    if (menu_permissions !== undefined) {
+      fields.push(`menu_permissions = $${idx++}`);
+      values.push(JSON.stringify(menu_permissions));
+    }
+
     if (is_actived !== undefined) {
       fields.push(`is_actived = $${idx++}`);
       values.push(is_actived);
@@ -84,7 +89,7 @@ class UserService {
       UPDATE users 
       SET ${fields.join(", ")} 
       WHERE id = $${idx} 
-      RETURNING id, username, full_name, email, avatar_url, is_actived, created_at
+      RETURNING id, username, full_name, email, avatar_url, menu_permissions, is_actived, created_at
     `;
 
     const result = await db.query(query, values);
