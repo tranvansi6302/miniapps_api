@@ -157,7 +157,8 @@ class MiniAppController {
       if (!req.file) {
         return responseHelper.error(res, "No file uploaded or invalid file format. Only .zip is allowed.", null, 400);
       }
-      const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+      const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+      const fileUrl = `${protocol}://${req.get("host")}/uploads/${req.file.filename}`;
       return responseHelper.success(res, { url: fileUrl }, "File uploaded successfully");
     } catch (error) {
       next(error);

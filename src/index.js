@@ -11,6 +11,9 @@ const { errorHandler } = require("./middlewares/error.middleware");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Enable trust proxy for reverse proxies (Render, Heroku, etc.)
+app.set("trust proxy", true);
+
 // Enable CORS and JSON parsing
 app.use(cors());
 app.use(express.json());
