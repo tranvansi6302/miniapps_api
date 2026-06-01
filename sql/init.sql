@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS mini_apps (
   terms_url TEXT,
   privacy_policy_url TEXT,
   file_path TEXT,
+  sub_apps JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -114,8 +115,10 @@ INSERT INTO menus (key, label) VALUES
   ('scripts', 'SDK Bridge Scripts')
 ON CONFLICT (key) DO NOTHING;
 
--- 10. Bổ sung trường file_path vào bảng mini_apps nếu chưa tồn tại (Dành cho DB đã chạy từ trước)
+-- 10. Bổ sung trường file_path và sub_apps vào bảng mini_apps nếu chưa tồn tại (Dành cho DB đã chạy từ trước)
 ALTER TABLE mini_apps ADD COLUMN IF NOT EXISTS file_path TEXT;
+ALTER TABLE mini_apps ADD COLUMN IF NOT EXISTS sub_apps JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE mini_apps ADD COLUMN IF NOT EXISTS is_maintenance BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- 11. Bảng lưu trữ lịch sử các bản build / phiên bản
 CREATE TABLE IF NOT EXISTS mini_app_builds (

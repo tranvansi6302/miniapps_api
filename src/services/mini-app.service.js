@@ -16,7 +16,8 @@ class MiniAppService {
     terms_url,
     privacy_policy_url,
     file_path,
-    permissions = []
+    permissions = [],
+    sub_apps = []
   }) {
     // Check if app_id already exists
     const checkAppId = await db.query("SELECT id FROM mini_apps WHERE app_id = $1", [app_id]);
@@ -33,18 +34,19 @@ class MiniAppService {
     const requiresAuthVal = requires_auth !== undefined ? requires_auth : false;
     const isHiddenVal = is_hidden !== undefined ? is_hidden : true;
     const isActiveVal = is_actived !== undefined ? is_actived : true;
+    const isMaintenanceVal = is_maintenance !== undefined ? is_maintenance : false;
 
     const client = await db.connect();
     try {
       await client.query('BEGIN');
-      
+
       const result = await client.query(
         `INSERT INTO mini_apps (
           app_id, name, category_id, short_description, description, 
           icon_url, url, version, requires_auth, is_hidden, 
-          is_actived, terms_url, privacy_policy_url, file_path
+          is_actived, terms_url, privacy_policy_url, file_path, sub_apps, is_maintenance
         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
          RETURNING *`,
         [
           app_id,
@@ -60,7 +62,9 @@ class MiniAppService {
           isActiveVal,
           terms_url,
           privacy_policy_url,
-          file_path
+          file_path,
+          Array.isArray(sub_apps) ? JSON.stringify(sub_apps) : (sub_apps || '[]'),
+          isMaintenanceVal
         ]
       );
 
@@ -142,7 +146,7 @@ class MiniAppService {
     if (memberCheck.rows.length === 0) {
       throw new Error("Access denied");
     }
-    
+
     return this.getByAppId(appId);
   }
 
@@ -171,7 +175,9 @@ class MiniAppService {
       "is_actived",
       "terms_url",
       "privacy_policy_url",
-      "file_path"
+      "file_path",
+      "sub_apps",
+      "is_maintenance"
     ];
 
     for (const field of allowedFields) {
@@ -191,7 +197,11 @@ class MiniAppService {
           }
         }
         fields.push(`${field} = $${idx++}`);
-        values.push(data[field]);
+        if (field === "sub_apps") {
+          values.push(Array.isArray(data[field]) ? JSON.stringify(data[field]) : (data[field] || '[]'));
+        } else {
+          values.push(data[field]);
+        }
       }
     }
 
@@ -218,7 +228,7 @@ class MiniAppService {
       if (data.permissions !== undefined && Array.isArray(data.permissions)) {
         // Xóa permissions cũ
         await client.query("DELETE FROM mini_app_permissions WHERE mini_app_id = $1", [id]);
-        
+
         // Thêm permissions mới
         if (data.permissions.length > 0) {
           for (const p of data.permissions) {

@@ -1,5 +1,82 @@
 const miniAppService = require("../services/mini-app.service");
 const responseHelper = require("../utils/response.helper");
+const supabase = require("../utils/supabase.helper");
+const path = require("path");
+
+function applyMaintenanceRedirect(app, req) {
+  if (!app) return app;
+
+  // We should NOT apply maintenance redirect to admin dashboard queries
+  // to avoid accidentally saving the maintenance URL back to the database.
+  const isDashboardRequest = req.headers.authorization || 
+                             req.query.include_hidden === "true" || 
+                             req.query.include_inactive === "true" ||
+                             req.query.include_hidden === true || 
+                             req.query.include_inactive === true;
+  
+  if (isDashboardRequest) {
+    return app;
+  }
+
+  const protocol = req.protocol;
+  const host = req.get('host');
+  const maintenanceUrl = `${protocol}://${host}/maintenance`;
+
+  const updatedApp = { ...app };
+
+  if (updatedApp.is_maintenance === true || updatedApp.is_maintenance === 'true') {
+    // Override main url
+    updatedApp.url = maintenanceUrl;
+    
+    // Override sub apps path as well
+    if (updatedApp.sub_apps) {
+      try {
+        let subAppsArray = typeof updatedApp.sub_apps === 'string' 
+          ? JSON.parse(updatedApp.sub_apps) 
+          : updatedApp.sub_apps;
+        
+        if (Array.isArray(subAppsArray)) {
+          subAppsArray = subAppsArray.map(sub => ({
+            ...sub,
+            path: maintenanceUrl
+          }));
+          updatedApp.sub_apps = subAppsArray;
+        }
+      } catch (err) {
+        console.error("Error parsing sub_apps for maintenance redirection:", err);
+      }
+    }
+  } else {
+    // If only specific sub_apps are marked as maintenance:
+    if (updatedApp.sub_apps) {
+      try {
+        let subAppsArray = typeof updatedApp.sub_apps === 'string' 
+          ? JSON.parse(updatedApp.sub_apps) 
+          : updatedApp.sub_apps;
+        
+        if (Array.isArray(subAppsArray)) {
+          let updated = false;
+          subAppsArray = subAppsArray.map(sub => {
+            if (sub.is_maintenance === true || sub.is_maintenance === 'true') {
+              updated = true;
+              return {
+                ...sub,
+                path: maintenanceUrl
+              };
+            }
+            return sub;
+          });
+          if (updated) {
+            updatedApp.sub_apps = subAppsArray;
+          }
+        }
+      } catch (err) {
+        console.error("Error parsing sub_apps for maintenance redirection:", err);
+      }
+    }
+  }
+  return updatedApp;
+}
 
 class MiniAppController {
   async create(req, res, next) {
@@ -19,7 +96,8 @@ class MiniAppController {
         terms_url,
         privacy_policy_url,
         file_path,
-        permissions
+        permissions,
+        sub_apps
       } = req.body;
 
       if (!app_id || !name || !category_id || !url || !version) {
@@ -41,7 +119,8 @@ class MiniAppController {
         terms_url,
         privacy_policy_url,
         file_path,
-        permissions
+        permissions,
+        sub_apps
       });
 
       return responseHelper.success(res, app, "Mini App created successfully", 201);
@@ -56,7 +135,8 @@ class MiniAppController {
   async getById(req, res, next) {
     try {
       const { id } = req.params;
-      const app = await miniAppService.getById(id);
+      let app = await miniAppService.getById(id);
+      app = applyMaintenanceRedirect(app, req);
       return responseHelper.success(res, app, "Mini App fetched successfully");
     } catch (error) {
       if (error.message === "Mini App not found") {
@@ -69,7 +149,8 @@ class MiniAppController {
   async getByAppId(req, res, next) {
     try {
       const { appId } = req.params;
-      const app = await miniAppService.getByAppId(appId);
+      let app = await miniAppService.getByAppId(appId);
+      app = applyMaintenanceRedirect(app, req);
       return responseHelper.success(res, app, "Mini App fetched successfully");
     } catch (error) {
       if (error.message === "Mini App not found") {
@@ -83,7 +164,8 @@ class MiniAppController {
     try {
       const { appId } = req.params;
       const userId = req.user.id;
-      const app = await miniAppService.checkAccessByAppId(appId, userId);
+      let app = await miniAppService.checkAccessByAppId(appId, userId);
+      app = applyMaintenanceRedirect(app, req);
       return responseHelper.success(res, app, "Access verified successfully");
     } catch (error) {
       if (error.message === "Mini App not found") {
@@ -129,7 +211,7 @@ class MiniAppController {
     try {
       const { category_id, search, include_hidden, include_inactive, mine } = req.query;
       const userId = req.user ? req.user.id : null;
-      const apps = await miniAppService.list({
+      let apps = await miniAppService.list({
         category_id: category_id ? parseInt(category_id) : undefined,
         search,
         include_hidden,
@@ -137,6 +219,7 @@ class MiniAppController {
         user_id: userId,
         mine
       });
+      apps = apps.map(app => applyMaintenanceRedirect(app, req));
       return responseHelper.success(res, apps, "Mini Apps fetched successfully");
     } catch (error) {
       next(error);
@@ -157,9 +240,49 @@ class MiniAppController {
       if (!req.file) {
         return responseHelper.error(res, "No file uploaded or invalid file format. Only .zip is allowed.", null, 400);
       }
-      const protocol = req.headers["x-forwarded-proto"] || req.protocol;
-      const fileUrl = `${protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-      return responseHelper.success(res, { url: fileUrl }, "File uploaded successfully");
+
+      // Check if Supabase helper is correctly initialized with credentials
+      const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!supabaseKey) {
+        return responseHelper.error(
+          res, 
+          "Supabase credentials are not configured in backend .env. Please configure SUPABASE_ANON_KEY in your env variables.", 
+          null, 
+          500
+        );
+      }
+
+      const appId = req.body.app_id || "app";
+      // Clean app_id: keep letters, numbers, dots, dashes, underscores
+      const cleanAppId = appId.replace(/[^a-zA-Z0-9.-_]/g, "");
+
+      const version = req.body.version || "1.0.0";
+      const cleanVersion = version.replace(/[^0-9.]/g, "");
+
+      const timestamp = Math.round(Date.now() / 1000);
+      const ext = path.extname(req.file.originalname) || ".zip";
+      const fileName = `${cleanAppId}_v${cleanVersion}_${timestamp}${ext}`;
+
+      const bucketName = process.env.SUPABASE_STORAGE_BUCKET || "miniappstorage";
+
+      // Upload the buffer to Supabase Storage Bucket
+      const { data, error } = await supabase.storage
+        .from(bucketName)
+        .upload(fileName, req.file.buffer, {
+          contentType: req.file.mimetype || "application/zip",
+          upsert: true
+        });
+
+      if (error) {
+        return responseHelper.error(res, `Supabase storage upload failed: ${error.message}`, null, 500);
+      }
+
+      // Retrieve public URL for the uploaded file
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(fileName);
+
+      return responseHelper.success(res, { url: publicUrl }, "File uploaded successfully to Supabase Storage");
     } catch (error) {
       next(error);
     }
