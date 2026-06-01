@@ -60,149 +60,128 @@ app.get("/health", async (req, res) => {
   }
 });
 
-// Beautiful dark-themed responsive maintenance page served directly in the webview
+// Beautiful light-themed responsive maintenance page served directly in the webview (zero scroll)
 app.get("/maintenance", (req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hệ thống đang bảo trì</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Phân hệ đang bảo trì</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #6366f1;
-      --primary-glow: rgba(99, 102, 241, 0.15);
-      --bg: #090d16;
-      --card-bg: rgba(30, 41, 59, 0.45);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
+      --primary: #4f46e5;
+      --primary-glow: rgba(79, 70, 229, 0.08);
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #475569;
     }
     
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      -webkit-tap-highlight-color: transparent;
     }
     
-    body {
-      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Strictly prevent all scrolling (both X and Y) */
       background-color: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
-      overflow: hidden;
-      position: relative;
     }
-    
-    /* Background Glows */
-    body::before, body::after {
-      content: '';
-      position: absolute;
-      width: 300px;
-      height: 300px;
-      border-radius: 50%;
-      background: var(--primary);
-      filter: blur(120px);
-      opacity: 0.12;
-      z-index: 0;
-    }
-    body::before { top: -10%; left: -10%; }
-    body::after { bottom: -10%; right: -10%; }
     
     .container {
-      width: 100%;
-      max-width: 480px;
+      width: 90%;
+      max-width: 320px; /* Perfectly compact to fit even tiny mobile screens */
       background: var(--card-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
       border: 1px solid var(--card-border);
       border-radius: 16px;
-      padding: 40px 32px;
+      padding: 32px 24px;
       text-align: center;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      z-index: 1;
-      position: relative;
-      animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     }
     
     /* Icon and animation */
     .icon-container {
-      width: 80px;
-      height: 80px;
+      width: 64px;
+      height: 64px;
       background: var(--primary-glow);
-      border: 1px solid rgba(99, 102, 241, 0.25);
+      border: 1px solid rgba(79, 70, 229, 0.15);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 28px;
+      margin: 0 auto 24px;
       position: relative;
       animation: pulse 2s infinite ease-in-out;
     }
     
     .icon-container svg {
-      width: 36px;
-      height: 36px;
+      width: 28px;
+      height: 28px;
       fill: var(--primary);
       animation: spin 8s infinite linear;
     }
     
     h1 {
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 700;
-      margin-bottom: 12px;
-      letter-spacing: -0.02em;
-      background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+      color: var(--text);
     }
     
     p {
-      font-size: 14px;
-      line-height: 1.6;
+      font-size: 13px;
+      line-height: 1.5;
       color: var(--text-muted);
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
     
     .status-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      background: rgba(234, 179, 8, 0.1);
-      border: 1px solid rgba(234, 179, 8, 0.2);
-      color: #fef08a;
-      padding: 6px 14px;
+      gap: 5px;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      color: #b45309;
+      padding: 5px 12px;
       border-radius: 20px;
-      font-size: 12px;
-      font-weight: 500;
-      margin-bottom: 24px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 20px;
     }
     
     .status-dot {
-      width: 6px;
-      height: 6px;
-      background-color: #eab308;
+      width: 5px;
+      height: 5px;
+      background-color: #d97706;
       border-radius: 50%;
       animation: blink 1.5s infinite;
     }
 
     .footer {
-      font-size: 11px;
-      color: rgba(148, 163, 184, 0.4);
-      margin-top: 16px;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-      padding-top: 16px;
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 12px;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 12px;
     }
     
     /* Animations */
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
+      from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
     
@@ -212,12 +191,12 @@ app.get("/maintenance", (req, res) => {
     }
     
     @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-      50% { box-shadow: 0 0 0 16px rgba(99, 102, 241, 0); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.2); }
+      50% { box-shadow: 0 0 0 12px rgba(79, 70, 229, 0); }
     }
     
     @keyframes blink {
-      0%, 100% { opacity: 0.3; }
+      0%, 100% { opacity: 0.4; }
       50% { opacity: 1; }
     }
   </style>
@@ -233,8 +212,8 @@ app.get("/maintenance", (req, res) => {
       <div class="status-dot"></div>
       Đang nâng cấp bảo trì
     </div>
-    <h1>Hệ thống bảo trì</h1>
-    <p>Phân hệ này đang được tối ưu hóa nhằm mang lại trải nghiệm tốt nhất cho bạn. Vui lòng quay lại sau ít phút.</p>
+    <h1>Phân hệ đang bảo trì</h1>
+    <p>Chúng tôi đang nâng cấp phân hệ này để nâng cao chất lượng dịch vụ. Quý khách vui lòng quay lại sau ít phút.</p>
     <div class="footer">
       Powered by EJSC Mini-App Platform
     </div>
