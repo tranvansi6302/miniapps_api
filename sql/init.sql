@@ -112,7 +112,8 @@ INSERT INTO menus (key, label) VALUES
   ('mini-apps', 'Ứng dụng Mini App'),
   ('categories', 'Danh mục Mini App'),
   ('users', 'Quản lý Người dùng'),
-  ('scripts', 'SDK Bridge Scripts')
+  ('scripts', 'SDK Bridge Scripts'),
+  ('app-menus', 'Cấu hình Menu Portal')
 ON CONFLICT (key) DO NOTHING;
 
 -- 10. Bổ sung trường file_path và sub_apps vào bảng mini_apps nếu chưa tồn tại (Dành cho DB đã chạy từ trước)
@@ -159,3 +160,28 @@ CREATE TABLE IF NOT EXISTS mini_app_member_permissions (
 ALTER TABLE mini_app_builds ADD COLUMN IF NOT EXISTS file_path TEXT;
 
 
+-- Bảng Menu Ứng Dụng (App Menus) dành cho Portal / FE
+CREATE TABLE IF NOT EXISTS app_menus (
+  id BIGSERIAL PRIMARY KEY,
+  menu_type INT NOT NULL DEFAULT 0, -- 0: webview, 1: native
+  mnu_name VARCHAR(255) NOT NULL,
+  mnu_image TEXT,
+  mnu_image_actived TEXT,
+  mnu_bg_color VARCHAR(50),
+  mnu_brd_color VARCHAR(50),
+  mnu_txt_color VARCHAR(50),
+  mnu_txt_color_actived VARCHAR(50),
+  mnu_order INT NOT NULL DEFAULT 0,
+  mnu_position VARCHAR(100) NOT NULL, -- e.g., 'SIDEBAR', 'BOTTOM_NAV'
+  menupid BIGINT REFERENCES app_menus(id) ON DELETE CASCADE,
+  app_id VARCHAR(255) REFERENCES mini_apps(app_id) ON DELETE SET NULL,
+  requires_auth BOOLEAN NOT NULL DEFAULT FALSE,
+  version VARCHAR(50),
+  file_path TEXT,
+  url TEXT,
+  is_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_app_menus_menupid ON app_menus(menupid);
+CREATE INDEX IF NOT EXISTS idx_app_menus_position ON app_menus(mnu_position);

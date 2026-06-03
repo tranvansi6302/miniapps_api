@@ -3,6 +3,7 @@ const router = express.Router();
 
 const authRoutes = require("./auth.routes");
 const menuRoutes = require("./menu.routes");
+const appMenuRoutes = require("./app-menu.routes");
 const userRoutes = require("./user.routes");
 const categoryRoutes = require("./category.routes");
 const miniAppRoutes = require("./mini-app.routes");
@@ -12,10 +13,12 @@ const dashboardRoutes = require("./dashboard.routes");
 // Mount sub-routers under specific resource namespaces
 router.use("/auth", authRoutes);
 router.use("/menus", menuRoutes);
+router.use("/app-menus", appMenuRoutes);
 router.use("/users", userRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/mini-apps", miniAppRoutes);
 router.use("/scripts", scriptRoutes);
 router.use("/dashboard", dashboardRoutes);
+
 
 module.exports = router;
