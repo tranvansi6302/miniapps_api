@@ -180,6 +180,7 @@ CREATE TABLE IF NOT EXISTS app_menus (
   file_path TEXT,
   url TEXT,
   is_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+  is_action_button BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

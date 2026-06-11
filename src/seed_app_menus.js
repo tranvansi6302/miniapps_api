@@ -41,11 +41,12 @@ async function seed() {
     await db.query(`
       INSERT INTO app_menus (
         menu_type, mnu_name, mnu_image, url, mnu_bg_color, mnu_brd_color,
-        mnu_txt_color, mnu_order, mnu_position, requires_auth, is_hidden
+        mnu_txt_color, mnu_order, mnu_position, requires_auth, is_hidden, is_action_button
       ) VALUES 
-      (1, 'Trang chủ', 'https://img.icons8.com/fluency/96/home.png', '/home', '#e3f2fd', '#bbdefb', '#1e88e5', 1, 'BOTTOM_NAV', false, false),
-      (1, 'Tin tức', 'https://img.icons8.com/fluency/96/news.png', '/news', '#f3e5f5', '#e1bee7', '#8e24aa', 2, 'BOTTOM_NAV', false, false),
-      (1, 'Cá nhân', 'https://img.icons8.com/fluency/96/user.png', '/profile', '#efebe9', '#d7ccc8', '#5d4037', 3, 'BOTTOM_NAV', true, false)
+      (1, 'Trang chủ', 'https://img.icons8.com/fluency/96/home.png', '/home', '#e3f2fd', '#bbdefb', '#1e88e5', 1, 'BOTTOM_NAV', false, false, false),
+      (1, 'Tin tức', 'https://img.icons8.com/fluency/96/news.png', '/news', '#f3e5f5', '#e1bee7', '#8e24aa', 2, 'BOTTOM_NAV', false, false, false),
+      (1, 'Đặt lịch', 'https://img.icons8.com/fluency/96/plus.png', '/booking', '#e8f5e9', '#c8e6c9', '#4caf50', 3, 'BOTTOM_NAV', false, false, true),
+      (1, 'Cá nhân', 'https://img.icons8.com/fluency/96/user.png', '/profile', '#efebe9', '#d7ccc8', '#5d4037', 4, 'BOTTOM_NAV', true, false, false)
     `);
 
     console.log("🟢 App menus seeded successfully!");

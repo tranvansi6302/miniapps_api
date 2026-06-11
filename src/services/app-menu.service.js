@@ -35,6 +35,7 @@ class AppMenuService {
           ELSE am.url
         END as url,
         am.is_hidden,
+        am.is_action_button,
         am.created_at
       FROM app_menus am
       LEFT JOIN mini_apps ma ON am.app_id = ma.app_id
@@ -52,7 +53,8 @@ class AppMenuService {
       id: parseInt(row.id),
       menupid: row.menupid ? parseInt(row.menupid) : null,
       requires_auth: row.requires_auth === true || row.requires_auth === 'true',
-      is_hidden: row.is_hidden === true || row.is_hidden === 'true'
+      is_hidden: row.is_hidden === true || row.is_hidden === 'true',
+      is_action_button: row.is_action_button === true || row.is_action_button === 'true'
     }));
   }
 
@@ -89,7 +91,7 @@ class AppMenuService {
       "menu_type", "mnu_name", "mnu_image", "mnu_image_actived",
       "mnu_bg_color", "mnu_brd_color", "mnu_txt_color", "mnu_txt_color_actived",
       "mnu_order", "mnu_position", "menupid", "app_id", "requires_auth",
-      "version", "file_path", "url", "is_hidden"
+      "version", "file_path", "url", "is_hidden", "is_action_button"
     ];
 
     for (const key of allowedFields) {
@@ -122,7 +124,7 @@ class AppMenuService {
       "menu_type", "mnu_name", "mnu_image", "mnu_image_actived",
       "mnu_bg_color", "mnu_brd_color", "mnu_txt_color", "mnu_txt_color_actived",
       "mnu_order", "mnu_position", "menupid", "app_id", "requires_auth",
-      "version", "file_path", "url", "is_hidden"
+      "version", "file_path", "url", "is_hidden", "is_action_button"
     ];
 
     for (const key of allowedFields) {
@@ -189,6 +191,7 @@ class AppMenuService {
           ELSE am.url
         END as url,
         am.is_hidden,
+        am.is_action_button,
         am.created_at
       FROM app_menus am
       LEFT JOIN mini_apps ma ON am.app_id = ma.app_id
@@ -204,7 +207,8 @@ class AppMenuService {
       id: parseInt(row.id),
       menupid: row.menupid ? parseInt(row.menupid) : null,
       requires_auth: row.requires_auth === true || row.requires_auth === 'true',
-      is_hidden: row.is_hidden === true || row.is_hidden === 'true'
+      is_hidden: row.is_hidden === true || row.is_hidden === 'true',
+      is_action_button: row.is_action_button === true || row.is_action_button === 'true'
     };
   }
 
