@@ -21,6 +21,7 @@ class AppMenuService {
         COALESCE(ma.version, am.version) as version,
         COALESCE(ma.file_path, am.file_path) as file_path,
         CASE 
+          WHEN am.menu_type = 1 THEN am.url
           WHEN am.url LIKE 'http://%' OR am.url LIKE 'https://%' THEN am.url
           WHEN am.app_id IS NOT NULL THEN
             CASE 
@@ -177,6 +178,7 @@ class AppMenuService {
         COALESCE(ma.version, am.version) as version,
         COALESCE(ma.file_path, am.file_path) as file_path,
         CASE 
+          WHEN am.menu_type = 1 THEN am.url
           WHEN am.url LIKE 'http://%' OR am.url LIKE 'https://%' THEN am.url
           WHEN am.app_id IS NOT NULL THEN
             CASE 
