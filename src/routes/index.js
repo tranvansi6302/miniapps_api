@@ -9,6 +9,7 @@ const categoryRoutes = require("./category.routes");
 const miniAppRoutes = require("./mini-app.routes");
 const scriptRoutes = require("./script.routes");
 const dashboardRoutes = require("./dashboard.routes");
+const accountMenuRoutes = require("./account-menu.routes");
 
 // Mount sub-routers under specific resource namespaces
 router.use("/auth", authRoutes);
@@ -19,6 +20,7 @@ router.use("/categories", categoryRoutes);
 router.use("/mini-apps", miniAppRoutes);
 router.use("/scripts", scriptRoutes);
 router.use("/dashboard", dashboardRoutes);
+router.use("/account-menus", accountMenuRoutes);
 
 
 module.exports = router;

@@ -186,3 +186,20 @@ CREATE TABLE IF NOT EXISTS app_menus (
 
 CREATE INDEX IF NOT EXISTS idx_app_menus_menupid ON app_menus(menupid);
 CREATE INDEX IF NOT EXISTS idx_app_menus_position ON app_menus(mnu_position);
+
+-- Bảng Menu Tài Khoản (Account Menus) riêng biệt
+CREATE TABLE IF NOT EXISTS account_menus (
+  id BIGSERIAL PRIMARY KEY,
+  category VARCHAR(255) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  icon TEXT NOT NULL,
+  url VARCHAR(255) NOT NULL,
+  right_icon TEXT,
+  order_num INT NOT NULL DEFAULT 0,
+  requires_auth BOOLEAN NOT NULL DEFAULT FALSE,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_account_menus_category ON account_menus(category);
+CREATE INDEX IF NOT EXISTS idx_account_menus_order_num ON account_menus(order_num);
