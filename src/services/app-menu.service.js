@@ -37,6 +37,8 @@ class AppMenuService {
         END as url,
         am.is_hidden,
         am.is_action_button,
+        am.permissions,
+        am.policy,
         am.created_at
       FROM app_menus am
       LEFT JOIN mini_apps ma ON am.app_id = ma.app_id
@@ -55,7 +57,9 @@ class AppMenuService {
       menupid: row.menupid ? parseInt(row.menupid) : null,
       requires_auth: row.requires_auth === true || row.requires_auth === 'true',
       is_hidden: row.is_hidden === true || row.is_hidden === 'true',
-      is_action_button: row.is_action_button === true || row.is_action_button === 'true'
+      is_action_button: row.is_action_button === true || row.is_action_button === 'true',
+      permissions: typeof row.permissions === 'string' ? JSON.parse(row.permissions) : (row.permissions || []),
+      policy: typeof row.policy === 'string' ? JSON.parse(row.policy) : (row.policy || {})
     }));
   }
 
@@ -92,14 +96,14 @@ class AppMenuService {
       "menu_type", "mnu_name", "mnu_image", "mnu_image_actived",
       "mnu_bg_color", "mnu_brd_color", "mnu_txt_color", "mnu_txt_color_actived",
       "mnu_order", "mnu_position", "menupid", "app_id", "requires_auth",
-      "version", "file_path", "url", "is_hidden", "is_action_button"
+      "version", "file_path", "url", "is_hidden", "is_action_button", "permissions", "policy"
     ];
 
     for (const key of allowedFields) {
       if (data[key] !== undefined) {
         fields.push(key);
         placeholders.push(`$${idx++}`);
-        values.push(data[key]);
+        values.push(key === 'permissions' || key === 'policy' ? JSON.stringify(data[key]) : data[key]);
       }
     }
 
@@ -125,13 +129,13 @@ class AppMenuService {
       "menu_type", "mnu_name", "mnu_image", "mnu_image_actived",
       "mnu_bg_color", "mnu_brd_color", "mnu_txt_color", "mnu_txt_color_actived",
       "mnu_order", "mnu_position", "menupid", "app_id", "requires_auth",
-      "version", "file_path", "url", "is_hidden", "is_action_button"
+      "version", "file_path", "url", "is_hidden", "is_action_button", "permissions", "policy"
     ];
 
     for (const key of allowedFields) {
       if (data[key] !== undefined) {
         fields.push(`${key} = $${idx++}`);
-        values.push(data[key]);
+        values.push(key === 'permissions' || key === 'policy' ? JSON.stringify(data[key]) : data[key]);
       }
     }
 
@@ -194,6 +198,8 @@ class AppMenuService {
         END as url,
         am.is_hidden,
         am.is_action_button,
+        am.permissions,
+        am.policy,
         am.created_at
       FROM app_menus am
       LEFT JOIN mini_apps ma ON am.app_id = ma.app_id
@@ -210,7 +216,9 @@ class AppMenuService {
       menupid: row.menupid ? parseInt(row.menupid) : null,
       requires_auth: row.requires_auth === true || row.requires_auth === 'true',
       is_hidden: row.is_hidden === true || row.is_hidden === 'true',
-      is_action_button: row.is_action_button === true || row.is_action_button === 'true'
+      is_action_button: row.is_action_button === true || row.is_action_button === 'true',
+      permissions: typeof row.permissions === 'string' ? JSON.parse(row.permissions) : (row.permissions || []),
+      policy: typeof row.policy === 'string' ? JSON.parse(row.policy) : (row.policy || {})
     };
   }
 

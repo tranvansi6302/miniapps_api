@@ -93,11 +93,13 @@ class MiniAppController {
         requires_auth,
         is_hidden,
         is_actived,
+        is_maintenance,
         terms_url,
         privacy_policy_url,
         file_path,
         permissions,
-        sub_apps
+        sub_apps,
+        policy
       } = req.body;
 
       if (!app_id || !name || !category_id || !url || !version) {
@@ -116,11 +118,13 @@ class MiniAppController {
         requires_auth,
         is_hidden,
         is_actived,
+        is_maintenance,
         terms_url,
         privacy_policy_url,
         file_path,
         permissions,
-        sub_apps
+        sub_apps,
+        policy
       });
 
       return responseHelper.success(res, app, "Mini App created successfully", 201);

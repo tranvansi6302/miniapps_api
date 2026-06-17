@@ -23,9 +23,10 @@ CREATE TABLE IF NOT EXISTS mini_apps (
   is_hidden BOOLEAN NOT NULL DEFAULT TRUE,
   is_actived BOOLEAN NOT NULL DEFAULT TRUE,
   terms_url TEXT,
-  privacy_policy_url TEXT,
   file_path TEXT,
   sub_apps JSONB DEFAULT '[]'::jsonb,
+  policy JSONB DEFAULT '{}'::jsonb,
+  is_maintenance BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -119,7 +120,12 @@ ON CONFLICT (key) DO NOTHING;
 -- 10. Bổ sung trường file_path và sub_apps vào bảng mini_apps nếu chưa tồn tại (Dành cho DB đã chạy từ trước)
 ALTER TABLE mini_apps ADD COLUMN IF NOT EXISTS file_path TEXT;
 ALTER TABLE mini_apps ADD COLUMN IF NOT EXISTS sub_apps JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE mini_apps ADD COLUMN IF NOT EXISTS policy JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE mini_apps ADD COLUMN IF NOT EXISTS is_maintenance BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE account_menus ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE account_menus ADD COLUMN IF NOT EXISTS policy JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE app_menus ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE app_menus ADD COLUMN IF NOT EXISTS policy JSONB DEFAULT '{}'::jsonb;
 
 -- 11. Bảng lưu trữ lịch sử các bản build / phiên bản
 CREATE TABLE IF NOT EXISTS mini_app_builds (
@@ -181,6 +187,8 @@ CREATE TABLE IF NOT EXISTS app_menus (
   url TEXT,
   is_hidden BOOLEAN NOT NULL DEFAULT FALSE,
   is_action_button BOOLEAN NOT NULL DEFAULT FALSE,
+  permissions JSONB DEFAULT '[]'::jsonb,
+  policy JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -190,14 +198,23 @@ CREATE INDEX IF NOT EXISTS idx_app_menus_position ON app_menus(mnu_position);
 -- Bảng Menu Tài Khoản (Account Menus) riêng biệt
 CREATE TABLE IF NOT EXISTS account_menus (
   id BIGSERIAL PRIMARY KEY,
+  key VARCHAR(255) NOT NULL,
   category VARCHAR(255) NOT NULL,
   name VARCHAR(255) NOT NULL,
   icon TEXT NOT NULL,
+  icon_actived TEXT,
+  bg_color VARCHAR(50),
+  brd_color VARCHAR(50),
+  txt_color VARCHAR(50),
+  txt_color_actived VARCHAR(50),
   url VARCHAR(255) NOT NULL,
+  menu_type INT NOT NULL DEFAULT 0, -- 0: webview, 1: native
   right_icon TEXT,
   order_num INT NOT NULL DEFAULT 0,
   requires_auth BOOLEAN NOT NULL DEFAULT FALSE,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  permissions JSONB DEFAULT '[]'::jsonb,
+  policy JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

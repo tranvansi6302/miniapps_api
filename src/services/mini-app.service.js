@@ -13,11 +13,13 @@ class MiniAppService {
     requires_auth,
     is_hidden,
     is_actived,
+    is_maintenance,
     terms_url,
     privacy_policy_url,
     file_path,
     permissions = [],
-    sub_apps = []
+    sub_apps = [],
+    policy = {}
   }) {
     // Check if app_id already exists
     const checkAppId = await db.query("SELECT id FROM mini_apps WHERE app_id = $1", [app_id]);
@@ -44,9 +46,9 @@ class MiniAppService {
         `INSERT INTO mini_apps (
           app_id, name, category_id, short_description, description, 
           icon_url, url, version, requires_auth, is_hidden, 
-          is_actived, terms_url, privacy_policy_url, file_path, sub_apps, is_maintenance
+          is_actived, terms_url, privacy_policy_url, file_path, sub_apps, is_maintenance, policy
         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
          RETURNING *`,
         [
           app_id,
@@ -64,7 +66,8 @@ class MiniAppService {
           privacy_policy_url,
           file_path,
           Array.isArray(sub_apps) ? JSON.stringify(sub_apps) : (sub_apps || '[]'),
-          isMaintenanceVal
+          isMaintenanceVal,
+          policy && typeof policy === 'object' ? JSON.stringify(policy) : (policy || '{}')
         ]
       );
 
@@ -177,7 +180,8 @@ class MiniAppService {
       "privacy_policy_url",
       "file_path",
       "sub_apps",
-      "is_maintenance"
+      "is_maintenance",
+      "policy"
     ];
 
     for (const field of allowedFields) {
@@ -199,6 +203,8 @@ class MiniAppService {
         fields.push(`${field} = $${idx++}`);
         if (field === "sub_apps") {
           values.push(Array.isArray(data[field]) ? JSON.stringify(data[field]) : (data[field] || '[]'));
+        } else if (field === "policy") {
+          values.push(data[field] && typeof data[field] === 'object' ? JSON.stringify(data[field]) : (data[field] || '{}'));
         } else {
           values.push(data[field]);
         }
