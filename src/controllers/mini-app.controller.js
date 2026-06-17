@@ -186,7 +186,8 @@ class MiniAppController {
   async update(req, res, next) {
     try {
       const { id } = req.params;
-      const app = await miniAppService.update(id, req.body);
+      const performedBy = (req.user && req.user.username) || "admin";
+      const app = await miniAppService.update(id, req.body, performedBy);
       return responseHelper.success(res, app, "Mini App updated successfully");
     } catch (error) {
       if (error.message === "Mini App not found") {

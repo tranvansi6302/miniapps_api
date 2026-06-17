@@ -157,12 +157,13 @@ class MiniAppService {
     return this.getByAppId(appId);
   }
 
-  async update(id, data) {
+  async update(id, data, performedBy = "admin") {
     // Check if exists
-    const checkResult = await db.query("SELECT id FROM mini_apps WHERE id = $1", [id]);
+    const checkResult = await db.query("SELECT id, is_actived, is_maintenance, version FROM mini_apps WHERE id = $1", [id]);
     if (checkResult.rows.length === 0) {
       throw new Error("Mini App not found");
     }
+    const oldApp = checkResult.rows[0];
 
     const fields = [];
     const values = [];
@@ -183,8 +184,6 @@ class MiniAppService {
       "terms_url",
       "privacy_policy_url",
       "file_path",
-      "sub_apps",
-      "is_maintenance",
       "policy",
       "file_hash",
       "file_checksum"
@@ -220,6 +219,16 @@ class MiniAppService {
     const client = await db.connect();
     try {
       await client.query('BEGIN');
+
+      // Check for is_actived changes
+      if (data.is_actived !== undefined && oldApp.is_actived !== data.is_actived) {
+        const action = data.is_actived ? "ACTIVATE_APP" : "DEACTIVATE_APP";
+        await client.query(
+          `INSERT INTO mini_app_moderation_logs (mini_app_id, action, version, performed_by, checklist)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [id, action, oldApp.version, performedBy, JSON.stringify({ notes: `Trạng thái hoạt động đổi từ ${oldApp.is_actived} sang ${data.is_actived}` })]
+        );
+      }
 
       let app;
       if (fields.length > 0) {

@@ -1,4 +1,5 @@
 const db = require("../db");
+const moderationLogService = require("./moderation-log.service");
 
 class MiniAppBuildService {
   async list(miniAppId) {
@@ -47,7 +48,7 @@ class MiniAppBuildService {
     };
   }
 
-  async updateStatus(miniAppId, id, status) {
+  async updateStatus(miniAppId, id, status, performedBy = "admin", checklist = {}) {
     // Validate status value
     const parsedStatus = parseInt(status);
     if (![1, 2, 3].includes(parsedStatus)) {
@@ -91,6 +92,14 @@ class MiniAppBuildService {
           [buildVersion, buildFilePath, buildFileHash, buildFileChecksum, miniAppId]
         );
       }
+
+      // Log moderation event
+      const logAction = parsedStatus === 2 ? "APPROVE_BUILD" : "REJECT_BUILD";
+      await client.query(
+        `INSERT INTO mini_app_moderation_logs (mini_app_id, build_id, action, version, performed_by, checklist)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [miniAppId, id, logAction, buildVersion, performedBy, JSON.stringify(checklist)]
+      );
 
       await client.query("COMMIT");
 

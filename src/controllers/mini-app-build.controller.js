@@ -44,13 +44,14 @@ class MiniAppBuildController {
   async updateStatus(req, res, next) {
     try {
       const { mini_app_id, id } = req.params;
-      const { status } = req.body;
+      const { status, checklist } = req.body;
+      const performedBy = req.body.performed_by || (req.user && req.user.username) || "admin";
 
       if (status === undefined) {
         return responseHelper.error(res, "Status value is required", null, 400);
       }
 
-      const build = await miniAppBuildService.updateStatus(mini_app_id, id, status);
+      const build = await miniAppBuildService.updateStatus(mini_app_id, id, status, performedBy, checklist);
       return responseHelper.success(res, build, "Build status updated successfully");
     } catch (error) {
       if (error.message === "Build not found") {
