@@ -3,7 +3,7 @@ const db = require("../db");
 class AccountMenuService {
   async getAll() {
     const query = `
-      SELECT id, key, category, mnu_name, mnu_image, mnu_image_actived, mnu_bg_color, mnu_brd_color, mnu_txt_color, mnu_txt_color_actived, url, menu_type, right_icon, mnu_order, requires_auth, is_hidden, permissions, policy
+      SELECT id, key, category, mnu_name, mnu_image, mnu_image_actived, mnu_bg_color, mnu_brd_color, mnu_txt_color, mnu_txt_color_actived, url, menu_type, right_icon, mnu_order, requires_auth, is_hidden, permissions, policy, version, file_path, file_hash, file_checksum
       FROM account_menus
       WHERE is_hidden = false
       ORDER BY mnu_order ASC, id ASC
@@ -35,7 +35,11 @@ class AccountMenuService {
         requires_auth: row.requires_auth === true || row.requires_auth === 'true',
         is_hidden: row.is_hidden === true || row.is_hidden === 'true',
         permissions: typeof row.permissions === 'string' ? JSON.parse(row.permissions) : (row.permissions || []),
-        policy: typeof row.policy === 'string' ? JSON.parse(row.policy) : (row.policy || {})
+        policy: typeof row.policy === 'string' ? JSON.parse(row.policy) : (row.policy || {}),
+        version: row.version,
+        file_path: row.file_path,
+        file_hash: row.file_hash,
+        file_checksum: row.file_checksum
       });
     }
 
@@ -48,39 +52,9 @@ class AccountMenuService {
 
   async create(data) {
     const query = `
-      INSERT INTO account_menus (key, category, mnu_name, mnu_image, mnu_image_actived, mnu_bg_color, mnu_brd_color, mnu_txt_color, mnu_txt_color_actived, url, menu_type, right_icon, mnu_order, requires_auth, is_hidden, permissions, policy)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-      RETURNING id, key, category, mnu_name, mnu_image, mnu_image_actived, mnu_bg_color, mnu_brd_color, mnu_txt_color, mnu_txt_color_actived, url, menu_type, right_icon, mnu_order, requires_auth, is_hidden, permissions, policy
-    `;
-    const values = [
-      data.key,
-      data.category,
-      data.mnu_name,
-      data.mnu_image,
-      data.mnu_image_actived || null,
-      data.mnu_bg_color || null,
-      data.mnu_brd_color || null,
-      data.mnu_txt_color || null,
-      data.mnu_txt_color_actived || null,
-      data.url,
-      parseInt(data.menu_type || 0),
-      data.right_icon || null,
-      data.mnu_order || 0,
-      data.requires_auth === true,
-      data.is_hidden === true,
-      JSON.stringify(data.permissions || []),
-      JSON.stringify(data.policy || {})
-    ];
-    const res = await db.query(query, values);
-    return res.rows[0];
-  }
-
-  async update(id, data) {
-    const query = `
-      UPDATE account_menus
-      SET key = $1, category = $2, mnu_name = $3, mnu_image = $4, mnu_image_actived = $5, mnu_bg_color = $6, mnu_brd_color = $7, mnu_txt_color = $8, mnu_txt_color_actived = $9, url = $10, menu_type = $11, right_icon = $12, mnu_order = $13, requires_auth = $14, is_hidden = $15, permissions = $16, policy = $17
-      WHERE id = $18
-      RETURNING id, key, category, mnu_name, mnu_image, mnu_image_actived, mnu_bg_color, mnu_brd_color, mnu_txt_color, mnu_txt_color_actived, url, menu_type, right_icon, mnu_order, requires_auth, is_hidden, permissions, policy
+      INSERT INTO account_menus (key, category, mnu_name, mnu_image, mnu_image_actived, mnu_bg_color, mnu_brd_color, mnu_txt_color, mnu_txt_color_actived, url, menu_type, right_icon, mnu_order, requires_auth, is_hidden, permissions, policy, version, file_path, file_hash, file_checksum)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+      RETURNING id, key, category, mnu_name, mnu_image, mnu_image_actived, mnu_bg_color, mnu_brd_color, mnu_txt_color, mnu_txt_color_actived, url, menu_type, right_icon, mnu_order, requires_auth, is_hidden, permissions, policy, version, file_path, file_hash, file_checksum
     `;
     const values = [
       data.key,
@@ -100,6 +74,44 @@ class AccountMenuService {
       data.is_hidden === true,
       JSON.stringify(data.permissions || []),
       JSON.stringify(data.policy || {}),
+      data.version || null,
+      data.file_path || null,
+      data.file_hash || null,
+      data.file_checksum || null
+    ];
+    const res = await db.query(query, values);
+    return res.rows[0];
+  }
+
+  async update(id, data) {
+    const query = `
+      UPDATE account_menus
+      SET key = $1, category = $2, mnu_name = $3, mnu_image = $4, mnu_image_actived = $5, mnu_bg_color = $6, mnu_brd_color = $7, mnu_txt_color = $8, mnu_txt_color_actived = $9, url = $10, menu_type = $11, right_icon = $12, mnu_order = $13, requires_auth = $14, is_hidden = $15, permissions = $16, policy = $17, version = $18, file_path = $19, file_hash = $20, file_checksum = $21
+      WHERE id = $22
+      RETURNING id, key, category, mnu_name, mnu_image, mnu_image_actived, mnu_bg_color, mnu_brd_color, mnu_txt_color, mnu_txt_color_actived, url, menu_type, right_icon, mnu_order, requires_auth, is_hidden, permissions, policy, version, file_path, file_hash, file_checksum
+    `;
+    const values = [
+      data.key,
+      data.category,
+      data.mnu_name,
+      data.mnu_image,
+      data.mnu_image_actived || null,
+      data.mnu_bg_color || null,
+      data.mnu_brd_color || null,
+      data.mnu_txt_color || null,
+      data.mnu_txt_color_actived || null,
+      data.url,
+      parseInt(data.menu_type || 0),
+      data.right_icon || null,
+      data.mnu_order || 0,
+      data.requires_auth === true,
+      data.is_hidden === true,
+      JSON.stringify(data.permissions || []),
+      JSON.stringify(data.policy || {}),
+      data.version || null,
+      data.file_path || null,
+      data.file_hash || null,
+      data.file_checksum || null,
       id
     ];
     const res = await db.query(query, values);

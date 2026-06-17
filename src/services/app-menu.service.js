@@ -39,6 +39,8 @@ class AppMenuService {
         am.is_action_button,
         am.permissions,
         am.policy,
+        am.file_hash,
+        am.file_checksum,
         am.created_at
       FROM app_menus am
       LEFT JOIN mini_apps ma ON am.app_id = ma.app_id
@@ -59,7 +61,9 @@ class AppMenuService {
       is_hidden: row.is_hidden === true || row.is_hidden === 'true',
       is_action_button: row.is_action_button === true || row.is_action_button === 'true',
       permissions: typeof row.permissions === 'string' ? JSON.parse(row.permissions) : (row.permissions || []),
-      policy: typeof row.policy === 'string' ? JSON.parse(row.policy) : (row.policy || {})
+      policy: typeof row.policy === 'string' ? JSON.parse(row.policy) : (row.policy || {}),
+      file_hash: row.file_hash,
+      file_checksum: row.file_checksum
     }));
   }
 
@@ -95,8 +99,7 @@ class AppMenuService {
     const allowedFields = [
       "menu_type", "mnu_name", "mnu_image", "mnu_image_actived",
       "mnu_bg_color", "mnu_brd_color", "mnu_txt_color", "mnu_txt_color_actived",
-      "mnu_order", "mnu_position", "menupid", "app_id", "requires_auth",
-      "version", "file_path", "url", "is_hidden", "is_action_button", "permissions", "policy"
+      "version", "file_path", "url", "is_hidden", "is_action_button", "permissions", "policy", "file_hash", "file_checksum"
     ];
 
     for (const key of allowedFields) {
@@ -128,8 +131,7 @@ class AppMenuService {
     const allowedFields = [
       "menu_type", "mnu_name", "mnu_image", "mnu_image_actived",
       "mnu_bg_color", "mnu_brd_color", "mnu_txt_color", "mnu_txt_color_actived",
-      "mnu_order", "mnu_position", "menupid", "app_id", "requires_auth",
-      "version", "file_path", "url", "is_hidden", "is_action_button", "permissions", "policy"
+      "version", "file_path", "url", "is_hidden", "is_action_button", "permissions", "policy", "file_hash", "file_checksum"
     ];
 
     for (const key of allowedFields) {
@@ -200,6 +202,8 @@ class AppMenuService {
         am.is_action_button,
         am.permissions,
         am.policy,
+        am.file_hash,
+        am.file_checksum,
         am.created_at
       FROM app_menus am
       LEFT JOIN mini_apps ma ON am.app_id = ma.app_id
@@ -218,7 +222,9 @@ class AppMenuService {
       is_hidden: row.is_hidden === true || row.is_hidden === 'true',
       is_action_button: row.is_action_button === true || row.is_action_button === 'true',
       permissions: typeof row.permissions === 'string' ? JSON.parse(row.permissions) : (row.permissions || []),
-      policy: typeof row.policy === 'string' ? JSON.parse(row.policy) : (row.policy || {})
+      policy: typeof row.policy === 'string' ? JSON.parse(row.policy) : (row.policy || {}),
+      file_hash: row.file_hash,
+      file_checksum: row.file_checksum
     };
   }
 

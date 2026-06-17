@@ -2,6 +2,7 @@ const miniAppService = require("../services/mini-app.service");
 const responseHelper = require("../utils/response.helper");
 const supabase = require("../utils/supabase.helper");
 const path = require("path");
+const crypto = require("crypto");
 
 function applyMaintenanceRedirect(app, req) {
   if (!app) return app;
@@ -286,7 +287,13 @@ class MiniAppController {
         .from(bucketName)
         .getPublicUrl(fileName);
 
-      return responseHelper.success(res, { url: publicUrl }, "File uploaded successfully to Supabase Storage");
+      const hash = crypto.createHash("sha256").update(req.file.buffer).digest("hex");
+
+      return responseHelper.success(
+        res, 
+        { url: publicUrl, hash: hash, checksum: hash }, 
+        "File uploaded successfully to Supabase Storage"
+      );
     } catch (error) {
       next(error);
     }
