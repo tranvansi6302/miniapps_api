@@ -15,7 +15,7 @@ class MiniAppBuildController {
   async create(req, res, next) {
     try {
       const { mini_app_id } = req.params;
-      const { version, changelog, reviewer_notes, file_path } = req.body;
+      const { version, changelog, reviewer_notes, file_path, file_hash, file_checksum } = req.body;
 
       if (!version) {
         return responseHelper.error(res, "Version number is required", null, 400);
@@ -25,7 +25,9 @@ class MiniAppBuildController {
         version,
         changelog,
         reviewer_notes,
-        file_path
+        file_path,
+        file_hash,
+        file_checksum
       });
       return responseHelper.success(res, build, "New build registered successfully", 201);
     } catch (error) {

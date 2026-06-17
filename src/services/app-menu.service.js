@@ -39,8 +39,8 @@ class AppMenuService {
         am.is_action_button,
         am.permissions,
         am.policy,
-        am.file_hash,
-        am.file_checksum,
+        COALESCE(ma.file_hash, am.file_hash) as file_hash,
+        COALESCE(ma.file_checksum, am.file_checksum) as file_checksum,
         am.created_at
       FROM app_menus am
       LEFT JOIN mini_apps ma ON am.app_id = ma.app_id
@@ -202,8 +202,8 @@ class AppMenuService {
         am.is_action_button,
         am.permissions,
         am.policy,
-        am.file_hash,
-        am.file_checksum,
+        COALESCE(ma.file_hash, am.file_hash) as file_hash,
+        COALESCE(ma.file_checksum, am.file_checksum) as file_checksum,
         am.created_at
       FROM app_menus am
       LEFT JOIN mini_apps ma ON am.app_id = ma.app_id

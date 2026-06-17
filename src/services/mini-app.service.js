@@ -19,7 +19,9 @@ class MiniAppService {
     file_path,
     permissions = [],
     sub_apps = [],
-    policy = {}
+    policy = {},
+    file_hash,
+    file_checksum
   }) {
     // Check if app_id already exists
     const checkAppId = await db.query("SELECT id FROM mini_apps WHERE app_id = $1", [app_id]);
@@ -46,9 +48,9 @@ class MiniAppService {
         `INSERT INTO mini_apps (
           app_id, name, category_id, short_description, description, 
           icon_url, url, version, requires_auth, is_hidden, 
-          is_actived, terms_url, privacy_policy_url, file_path, sub_apps, is_maintenance, policy
+          is_actived, terms_url, privacy_policy_url, file_path, sub_apps, is_maintenance, policy, file_hash, file_checksum
         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
          RETURNING *`,
         [
           app_id,
@@ -67,7 +69,9 @@ class MiniAppService {
           file_path,
           Array.isArray(sub_apps) ? JSON.stringify(sub_apps) : (sub_apps || '[]'),
           isMaintenanceVal,
-          policy && typeof policy === 'object' ? JSON.stringify(policy) : (policy || '{}')
+          policy && typeof policy === 'object' ? JSON.stringify(policy) : (policy || '{}'),
+          file_hash || null,
+          file_checksum || null
         ]
       );
 
@@ -181,7 +185,9 @@ class MiniAppService {
       "file_path",
       "sub_apps",
       "is_maintenance",
-      "policy"
+      "policy",
+      "file_hash",
+      "file_checksum"
     ];
 
     for (const field of allowedFields) {

@@ -3,7 +3,7 @@ const db = require("../db");
 class MiniAppBuildService {
   async list(miniAppId) {
     const result = await db.query(
-      `SELECT id, mini_app_id, version, changelog, reviewer_notes, status, file_path, created_at 
+      `SELECT id, mini_app_id, version, changelog, reviewer_notes, status, file_path, file_hash, file_checksum, created_at 
        FROM mini_app_builds 
        WHERE mini_app_id = $1 
        ORDER BY id DESC`,
@@ -16,7 +16,7 @@ class MiniAppBuildService {
     }));
   }
 
-  async create(miniAppId, { version, changelog, reviewer_notes, file_path }) {
+  async create(miniAppId, { version, changelog, reviewer_notes, file_path, file_hash, file_checksum }) {
     // Check if the mini app exists
     const checkApp = await db.query("SELECT id FROM mini_apps WHERE id = $1", [miniAppId]);
     if (checkApp.rows.length === 0) {
@@ -33,10 +33,10 @@ class MiniAppBuildService {
     }
 
     const result = await db.query(
-      `INSERT INTO mini_app_builds (mini_app_id, version, changelog, reviewer_notes, file_path)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, mini_app_id, version, changelog, reviewer_notes, status, file_path, created_at`,
-      [miniAppId, version, changelog, reviewer_notes, file_path]
+      `INSERT INTO mini_app_builds (mini_app_id, version, changelog, reviewer_notes, file_path, file_hash, file_checksum)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, mini_app_id, version, changelog, reviewer_notes, status, file_path, file_hash, file_checksum, created_at`,
+      [miniAppId, version, changelog, reviewer_notes, file_path, file_hash || null, file_checksum || null]
     );
 
     const build = result.rows[0];
@@ -56,7 +56,7 @@ class MiniAppBuildService {
 
     // Check if build exists and belongs to app
     const checkBuild = await db.query(
-      "SELECT id, version, file_path FROM mini_app_builds WHERE id = $1 AND mini_app_id = $2",
+      "SELECT id, version, file_path, file_hash, file_checksum FROM mini_app_builds WHERE id = $1 AND mini_app_id = $2",
       [id, miniAppId]
     );
     if (checkBuild.rows.length === 0) {
@@ -65,6 +65,8 @@ class MiniAppBuildService {
 
     const buildVersion = checkBuild.rows[0].version;
     const buildFilePath = checkBuild.rows[0].file_path;
+    const buildFileHash = checkBuild.rows[0].file_hash;
+    const buildFileChecksum = checkBuild.rows[0].file_checksum;
 
     // Run in a transaction
     const client = await db.connect();
@@ -76,17 +78,17 @@ class MiniAppBuildService {
         `UPDATE mini_app_builds 
          SET status = $1 
          WHERE id = $2 AND mini_app_id = $3
-         RETURNING id, mini_app_id, version, changelog, reviewer_notes, status, file_path, created_at`,
+         RETURNING id, mini_app_id, version, changelog, reviewer_notes, status, file_path, file_hash, file_checksum, created_at`,
         [parsedStatus, id, miniAppId]
       );
 
-      // If approved (status = 2), update version and file_path in parent mini_apps table
+      // If approved (status = 2), update version, file_path, file_hash, file_checksum in parent mini_apps table
       if (parsedStatus === 2) {
         await client.query(
           `UPDATE mini_apps 
-           SET version = $1, file_path = $2 
-           WHERE id = $3`,
-          [buildVersion, buildFilePath, miniAppId]
+           SET version = $1, file_path = $2, file_hash = $3, file_checksum = $4 
+           WHERE id = $5`,
+          [buildVersion, buildFilePath, buildFileHash, buildFileChecksum, miniAppId]
         );
       }
 
