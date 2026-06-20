@@ -1,7 +1,7 @@
 const db = require("../db");
 
 class ModerationLogService {
-  async list({ mini_app_id, action, search, page = 1, limit = 20 } = {}) {
+  async list({ mini_app_id, build_id, action, search, page = 1, limit = 20 } = {}) {
     const offset = (page - 1) * limit;
     const values = [];
     let idx = 1;
@@ -18,6 +18,11 @@ class ModerationLogService {
     if (mini_app_id) {
       query += ` AND l.mini_app_id = $${idx++}`;
       values.push(parseInt(mini_app_id));
+    }
+
+    if (build_id) {
+      query += ` AND l.build_id = $${idx++}`;
+      values.push(parseInt(build_id));
     }
 
     if (action) {

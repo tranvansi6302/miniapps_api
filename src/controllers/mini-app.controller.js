@@ -4,80 +4,6 @@ const supabase = require("../utils/supabase.helper");
 const path = require("path");
 const crypto = require("crypto");
 
-function applyMaintenanceRedirect(app, req) {
-  if (!app) return app;
-
-  // We should NOT apply maintenance redirect to admin dashboard queries
-  // to avoid accidentally saving the maintenance URL back to the database.
-  const isDashboardRequest = req.headers.authorization || 
-                             req.query.include_hidden === "true" || 
-                             req.query.include_inactive === "true" ||
-                             req.query.include_hidden === true || 
-                             req.query.include_inactive === true;
-  
-  if (isDashboardRequest) {
-    return app;
-  }
-
-  const protocol = req.protocol;
-  const host = req.get('host');
-  const maintenanceUrl = `${protocol}://${host}/maintenance`;
-
-  const updatedApp = { ...app };
-
-  if (updatedApp.is_maintenance === true || updatedApp.is_maintenance === 'true') {
-    // Override main url
-    updatedApp.url = maintenanceUrl;
-    
-    // Override sub apps path as well
-    if (updatedApp.sub_apps) {
-      try {
-        let subAppsArray = typeof updatedApp.sub_apps === 'string' 
-          ? JSON.parse(updatedApp.sub_apps) 
-          : updatedApp.sub_apps;
-        
-        if (Array.isArray(subAppsArray)) {
-          subAppsArray = subAppsArray.map(sub => ({
-            ...sub,
-            path: maintenanceUrl
-          }));
-          updatedApp.sub_apps = subAppsArray;
-        }
-      } catch (err) {
-        console.error("Error parsing sub_apps for maintenance redirection:", err);
-      }
-    }
-  } else {
-    // If only specific sub_apps are marked as maintenance:
-    if (updatedApp.sub_apps) {
-      try {
-        let subAppsArray = typeof updatedApp.sub_apps === 'string' 
-          ? JSON.parse(updatedApp.sub_apps) 
-          : updatedApp.sub_apps;
-        
-        if (Array.isArray(subAppsArray)) {
-          let updated = false;
-          subAppsArray = subAppsArray.map(sub => {
-            if (sub.is_maintenance === true || sub.is_maintenance === 'true') {
-              updated = true;
-              return {
-                ...sub,
-                path: maintenanceUrl
-              };
-            }
-            return sub;
-          });
-          if (updated) {
-            updatedApp.sub_apps = subAppsArray;
-          }
-        }
-      } catch (err) {
-        console.error("Error parsing sub_apps for maintenance redirection:", err);
-      }
-    }
-  }
-  return updatedApp;
-}
 
 class MiniAppController {
   async create(req, res, next) {
@@ -94,7 +20,6 @@ class MiniAppController {
         requires_auth,
         is_hidden,
         is_actived,
-        is_maintenance,
         terms_url,
         privacy_policy_url,
         file_path,
@@ -119,7 +44,6 @@ class MiniAppController {
         requires_auth,
         is_hidden,
         is_actived,
-        is_maintenance,
         terms_url,
         privacy_policy_url,
         file_path,
@@ -140,8 +64,7 @@ class MiniAppController {
   async getById(req, res, next) {
     try {
       const { id } = req.params;
-      let app = await miniAppService.getById(id);
-      app = applyMaintenanceRedirect(app, req);
+      const app = await miniAppService.getById(id);
       return responseHelper.success(res, app, "Mini App fetched successfully");
     } catch (error) {
       if (error.message === "Mini App not found") {
@@ -154,8 +77,7 @@ class MiniAppController {
   async getByAppId(req, res, next) {
     try {
       const { appId } = req.params;
-      let app = await miniAppService.getByAppId(appId);
-      app = applyMaintenanceRedirect(app, req);
+      const app = await miniAppService.getByAppId(appId);
       return responseHelper.success(res, app, "Mini App fetched successfully");
     } catch (error) {
       if (error.message === "Mini App not found") {
@@ -169,8 +91,7 @@ class MiniAppController {
     try {
       const { appId } = req.params;
       const userId = req.user.id;
-      let app = await miniAppService.checkAccessByAppId(appId, userId);
-      app = applyMaintenanceRedirect(app, req);
+      const app = await miniAppService.checkAccessByAppId(appId, userId);
       return responseHelper.success(res, app, "Access verified successfully");
     } catch (error) {
       if (error.message === "Mini App not found") {
@@ -203,7 +124,8 @@ class MiniAppController {
   async softDelete(req, res, next) {
     try {
       const { id } = req.params;
-      const app = await miniAppService.softDelete(id);
+      const performedBy = (req.user && req.user.username) || "admin";
+      const app = await miniAppService.softDelete(id, performedBy);
       return responseHelper.success(res, app, "Mini App soft-deleted successfully");
     } catch (error) {
       if (error.message === "Mini App not found") {
@@ -217,7 +139,7 @@ class MiniAppController {
     try {
       const { category_id, search, include_hidden, include_inactive, mine } = req.query;
       const userId = req.user ? req.user.id : null;
-      let apps = await miniAppService.list({
+      const apps = await miniAppService.list({
         category_id: category_id ? parseInt(category_id) : undefined,
         search,
         include_hidden,
@@ -225,7 +147,6 @@ class MiniAppController {
         user_id: userId,
         mine
       });
-      apps = apps.map(app => applyMaintenanceRedirect(app, req));
       return responseHelper.success(res, apps, "Mini Apps fetched successfully");
     } catch (error) {
       next(error);

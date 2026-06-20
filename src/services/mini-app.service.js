@@ -13,7 +13,6 @@ class MiniAppService {
     requires_auth,
     is_hidden,
     is_actived,
-    is_maintenance,
     terms_url,
     privacy_policy_url,
     file_path,
@@ -38,7 +37,6 @@ class MiniAppService {
     const requiresAuthVal = requires_auth !== undefined ? requires_auth : false;
     const isHiddenVal = is_hidden !== undefined ? is_hidden : true;
     const isActiveVal = is_actived !== undefined ? is_actived : true;
-    const isMaintenanceVal = is_maintenance !== undefined ? is_maintenance : false;
 
     const client = await db.connect();
     try {
@@ -48,9 +46,9 @@ class MiniAppService {
         `INSERT INTO mini_apps (
           app_id, name, category_id, short_description, description, 
           icon_url, url, version, requires_auth, is_hidden, 
-          is_actived, terms_url, privacy_policy_url, file_path, sub_apps, is_maintenance, policy, file_hash, file_checksum
+          is_actived, terms_url, privacy_policy_url, file_path, sub_apps, policy, file_hash, file_checksum
         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
          RETURNING *`,
         [
           app_id,
@@ -68,7 +66,6 @@ class MiniAppService {
           privacy_policy_url,
           file_path,
           Array.isArray(sub_apps) ? JSON.stringify(sub_apps) : (sub_apps || '[]'),
-          isMaintenanceVal,
           policy && typeof policy === 'object' ? JSON.stringify(policy) : (policy || '{}'),
           file_hash || null,
           file_checksum || null
@@ -159,7 +156,7 @@ class MiniAppService {
 
   async update(id, data, performedBy = "admin") {
     // Check if exists
-    const checkResult = await db.query("SELECT id, is_actived, is_maintenance, version FROM mini_apps WHERE id = $1", [id]);
+    const checkResult = await db.query("SELECT id, is_actived, version FROM mini_apps WHERE id = $1", [id]);
     if (checkResult.rows.length === 0) {
       throw new Error("Mini App not found");
     }
@@ -222,11 +219,20 @@ class MiniAppService {
 
       // Check for is_actived changes
       if (data.is_actived !== undefined && oldApp.is_actived !== data.is_actived) {
-        const action = data.is_actived ? "ACTIVATE_APP" : "DEACTIVATE_APP";
+        const action = "TOGGLE_ACTIVE";
         await client.query(
           `INSERT INTO mini_app_moderation_logs (mini_app_id, action, version, performed_by, checklist)
            VALUES ($1, $2, $3, $4, $5)`,
-          [id, action, oldApp.version, performedBy, JSON.stringify({ notes: `Trạng thái hoạt động đổi từ ${oldApp.is_actived} sang ${data.is_actived}` })]
+          [
+            id, 
+            action, 
+            oldApp.version || "1.0.0", 
+            performedBy, 
+            JSON.stringify({ 
+              is_actived: data.is_actived, 
+              notes: `Trạng thái hoạt động đổi từ ${oldApp.is_actived} sang ${data.is_actived}` 
+            })
+          ]
         );
       }
 
@@ -271,22 +277,51 @@ class MiniAppService {
     }
   }
 
-  async softDelete(id) {
-    const checkResult = await db.query("SELECT id FROM mini_apps WHERE id = $1", [id]);
+  async softDelete(id, performedBy = "admin") {
+    const checkResult = await db.query("SELECT id, is_actived, version FROM mini_apps WHERE id = $1", [id]);
     if (checkResult.rows.length === 0) {
       throw new Error("Mini App not found");
     }
+    const oldApp = checkResult.rows[0];
 
-    const result = await db.query(
-      `UPDATE mini_apps 
-       SET is_actived = false 
-       WHERE id = $1 
-       RETURNING id, app_id, name, is_actived`,
-      [id]
-    );
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
 
-    const app = result.rows[0];
-    return { ...app, id: parseInt(app.id) };
+      const result = await client.query(
+        `UPDATE mini_apps 
+         SET is_actived = false 
+         WHERE id = $1 
+         RETURNING id, app_id, name, is_actived`,
+        [id]
+      );
+
+      if (oldApp.is_actived !== false) {
+        await client.query(
+          `INSERT INTO mini_app_moderation_logs (mini_app_id, action, version, performed_by, checklist)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            id,
+            "TOGGLE_ACTIVE",
+            oldApp.version || "1.0.0",
+            performedBy,
+            JSON.stringify({
+              is_actived: false,
+              notes: `Xóa Mini App (Khóa hoạt động)`
+            })
+          ]
+        );
+      }
+
+      await client.query('COMMIT');
+      const app = result.rows[0];
+      return { ...app, id: parseInt(app.id) };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   async list({ category_id, search, include_hidden, include_inactive, user_id, mine } = {}) {

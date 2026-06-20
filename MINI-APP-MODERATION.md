@@ -121,7 +121,6 @@ Lịch sử kiểm duyệt được ghi lại ngay lập tức khi xảy ra các
 3. **Thay đổi trạng thái hoạt động / Kill Switch (`TOGGLE_ACTIVE`)**:
    - **Thời điểm**: Khi Admin nhấn nút **Xóa Mini App** (chuyển sang không hoạt động) hoặc nút **Kích hoạt** tại vùng nguy hiểm trong trang cấu hình Mini App.
    - **Dữ liệu lưu**: Trạng thái kích hoạt mới của Mini App (`is_actived = true/false`) kèm theo ghi chú hành động.
-
 ### 8.2. Cấu trúc dữ liệu ghi nhật ký (Audit Log Schema)
 
 Mỗi bản ghi nhật ký chứa các thông tin cụ thể:
@@ -134,4 +133,5 @@ Mỗi bản ghi nhật ký chứa các thông tin cụ thể:
   - `checks`: Danh sách kết quả đánh giá (ví dụ: `legal_content: true`, `stability_check: true`).
   - `notes`: Ghi chú bổ sung khi duyệt.
   - `reason`: Lý do từ chối nếu hành động là từ chối bản build.
+  - `is_actived`: Lưu giữ giá trị trạng thái mới khi thực hiện bật/tắt hoạt động.
 

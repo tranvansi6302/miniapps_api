@@ -4,9 +4,10 @@ const responseHelper = require("../utils/response.helper");
 class ModerationLogController {
   async list(req, res, next) {
     try {
-      const { mini_app_id, action, search, page, limit } = req.query;
+      const { mini_app_id, build_id, action, search, page, limit } = req.query;
       const data = await moderationLogService.list({
         mini_app_id,
+        build_id,
         action,
         search,
         page,
