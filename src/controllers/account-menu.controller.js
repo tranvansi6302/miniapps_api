@@ -4,7 +4,7 @@ const responseHelper = require("../utils/response.helper");
 class AccountMenuController {
   async getAll(req, res, next) {
     try {
-      const data = await accountMenuService.getAll();
+      const data = await accountMenuService.getAll(req.query);
       return responseHelper.success(res, data, "Account menus fetched and grouped successfully");
     } catch (error) {
       next(error);
