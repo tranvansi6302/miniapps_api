@@ -1,4 +1,5 @@
 const db = require("../db");
+const miniAppService = require("./mini-app.service");
 
 class AccountMenuService {
   async getById(id) {
@@ -16,6 +17,16 @@ class AccountMenuService {
       throw new Error("Account menu item not found");
     }
     const row = res.rows[0];
+    let url = row.url;
+    if (parseInt(row.menu_type || 0) === 0 && row.app_id) {
+      try {
+        const matchedApp = await miniAppService.getByAppId(row.app_id);
+        if (matchedApp) {
+          url = matchedApp.url;
+        }
+      } catch (_) {}
+    }
+
     return {
       id: parseInt(row.id),
       key: row.key,
@@ -27,7 +38,7 @@ class AccountMenuService {
       mnu_brd_color: row.mnu_brd_color,
       mnu_txt_color: row.mnu_txt_color,
       mnu_txt_color_actived: row.mnu_txt_color_actived,
-      url: row.url,
+      url: url,
       menu_type: parseInt(row.menu_type || 0),
       right_icon: row.right_icon,
       mnu_order: parseInt(row.mnu_order),
@@ -56,6 +67,13 @@ class AccountMenuService {
     
     query += ` ORDER BY am.mnu_order ASC, am.id ASC`;
     const result = await db.query(query);
+
+    // Fetch all mini apps once to map the URL dynamically
+    const allApps = await miniAppService.list();
+    const appsMap = {};
+    for (const app of allApps) {
+      appsMap[app.app_id] = app;
+    }
     
     // Group by category
     const grouped = {};
@@ -64,6 +82,16 @@ class AccountMenuService {
       if (!grouped[cat]) {
         grouped[cat] = [];
       }
+
+      let url = row.url;
+      // If it is a webview menu and has app_id, resolve its url from mini_apps
+      if (parseInt(row.menu_type || 0) === 0 && row.app_id) {
+        const matchedApp = appsMap[row.app_id];
+        if (matchedApp) {
+          url = matchedApp.url;
+        }
+      }
+
       grouped[cat].push({
         id: parseInt(row.id),
         key: row.key,
@@ -75,7 +103,7 @@ class AccountMenuService {
         mnu_brd_color: row.mnu_brd_color,
         mnu_txt_color: row.mnu_txt_color,
         mnu_txt_color_actived: row.mnu_txt_color_actived,
-        url: row.url,
+        url: url,
         menu_type: parseInt(row.menu_type || 0),
         right_icon: row.right_icon,
         mnu_order: parseInt(row.mnu_order),

@@ -1,4 +1,5 @@
 const db = require("../db");
+const miniAppService = require("./mini-app.service");
 
 class AppMenuService {
   async getAll(position) {
@@ -32,14 +33,34 @@ class AppMenuService {
     query += ` ORDER BY am.mnu_order ASC, am.id ASC`;
 
     const result = await db.query(query, values);
-    return result.rows.map(row => ({
-      ...row,
-      id: parseInt(row.id),
-      menupid: row.menupid ? parseInt(row.menupid) : null,
-      requires_auth: row.requires_auth === true || row.requires_auth === 'true',
-      is_hidden: row.is_hidden === true || row.is_hidden === 'true',
-      is_action_button: row.is_action_button === true || row.is_action_button === 'true'
-    }));
+
+    // Fetch all mini apps once to map the URL dynamically
+    const allApps = await miniAppService.list();
+    const appsMap = {};
+    for (const app of allApps) {
+      appsMap[app.app_id] = app;
+    }
+
+    return result.rows.map(row => {
+      let url = row.url;
+      // If it is a webview menu and has app_id, resolve its url from mini_apps
+      if (parseInt(row.menu_type || 0) === 0 && row.app_id) {
+        const matchedApp = appsMap[row.app_id];
+        if (matchedApp) {
+          url = matchedApp.url;
+        }
+      }
+
+      return {
+        ...row,
+        id: parseInt(row.id),
+        menupid: row.menupid ? parseInt(row.menupid) : null,
+        url: url,
+        requires_auth: row.requires_auth === true || row.requires_auth === 'true',
+        is_hidden: row.is_hidden === true || row.is_hidden === 'true',
+        is_action_button: row.is_action_button === true || row.is_action_button === 'true'
+      };
+    });
   }
 
   async getTree(position) {
@@ -168,6 +189,16 @@ class AppMenuService {
       throw new Error("Menu item not found");
     }
     const row = res.rows[0];
+    let url = row.url;
+    if (parseInt(row.menu_type || 0) === 0 && row.app_id) {
+      try {
+        const matchedApp = await miniAppService.getByAppId(row.app_id);
+        if (matchedApp) {
+          url = matchedApp.url;
+        }
+      } catch (_) {}
+    }
+
     return {
       id: parseInt(row.id),
       key: row.key,
@@ -179,7 +210,7 @@ class AppMenuService {
       mnu_brd_color: row.mnu_brd_color,
       mnu_txt_color: row.mnu_txt_color,
       mnu_txt_color_actived: row.mnu_txt_color_actived,
-      url: row.url,
+      url: url,
       menu_type: parseInt(row.menu_type || 0),
       right_icon: row.right_icon,
       mnu_order: parseInt(row.mnu_order),
