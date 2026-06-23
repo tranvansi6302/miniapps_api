@@ -14,9 +14,9 @@ async function runMigration() {
     // 2. Define default settings
     const defaultPermissions = ["camera", "location", "storage"];
     const defaultPolicy = {
-      allowedDomains: ["homebooking-user.vercel.app", "miniapps-api-2zb0.onrender.com"],
-      allowExternalNavigation: false,
-      allowFileDownload: true
+      allowed_domains: ["homebooking-user.vercel.app", "miniapps-api-2zb0.onrender.com"],
+      allow_external_navigation: false,
+      allow_file_download: true
     };
 
     const permissionsStr = JSON.stringify(defaultPermissions);

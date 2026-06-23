@@ -57,9 +57,9 @@ Khi các ứng dụng Client (như Mobile App) gọi đến các API lấy menu 
   "is_hidden": false,
   "is_action_button": false,
   "policy": {
-    "allowedDomains": ["mini.example.com", "cdn.example.com"],
-    "allowExternalNavigation": false,
-    "allowFileDownload": true
+    "allowed_domains": ["mini.example.com", "cdn.example.com"],
+    "allow_external_navigation": false,
+    "allow_file_download": true
   }
 }
 ```
@@ -91,9 +91,9 @@ Khi các ứng dụng Client (như Mobile App) gọi đến các API lấy menu 
         "is_actived": true,
         "app_id": "user.global.homebooking.profile",
         "policy": {
-          "allowedDomains": ["mini.example.com", "cdn.example.com"],
-          "allowExternalNavigation": false,
-          "allowFileDownload": true
+          "allowed_domains": ["mini.example.com", "cdn.example.com"],
+          "allow_external_navigation": false,
+          "allow_file_download": true
         }
       }
     ]
