@@ -18,32 +18,11 @@ class AppMenuService {
         am.menupid,
         am.app_id,
         am.requires_auth,
-        COALESCE(ma.version, am.version) as version,
-        COALESCE(ma.file_path, am.file_path) as file_path,
-        CASE 
-          WHEN am.menu_type = 1 THEN am.url
-          WHEN am.url LIKE 'http://%' OR am.url LIKE 'https://%' THEN am.url
-          WHEN am.app_id IS NOT NULL THEN
-            CASE 
-              WHEN am.url IS NOT NULL AND am.url <> '' THEN
-                CASE 
-                  WHEN RIGHT(ma.url, 1) = '/' AND LEFT(am.url, 1) = '/' THEN ma.url || SUBSTRING(am.url, 2)
-                  WHEN RIGHT(ma.url, 1) <> '/' AND LEFT(am.url, 1) <> '/' THEN ma.url || '/' || am.url
-                  ELSE ma.url || am.url
-                END
-              ELSE ma.url
-            END
-          ELSE am.url
-        END as url,
+        am.url,
         am.is_hidden,
         am.is_action_button,
-        am.permissions,
-        am.policy,
-        COALESCE(ma.file_hash, am.file_hash) as file_hash,
-        COALESCE(ma.file_checksum, am.file_checksum) as file_checksum,
         am.created_at
       FROM app_menus am
-      LEFT JOIN mini_apps ma ON am.app_id = ma.app_id
     `;
     const values = [];
     if (position) {
@@ -59,11 +38,7 @@ class AppMenuService {
       menupid: row.menupid ? parseInt(row.menupid) : null,
       requires_auth: row.requires_auth === true || row.requires_auth === 'true',
       is_hidden: row.is_hidden === true || row.is_hidden === 'true',
-      is_action_button: row.is_action_button === true || row.is_action_button === 'true',
-      permissions: typeof row.permissions === 'string' ? JSON.parse(row.permissions) : (row.permissions || []),
-      policy: typeof row.policy === 'string' ? JSON.parse(row.policy) : (row.policy || {}),
-      file_hash: row.file_hash,
-      file_checksum: row.file_checksum
+      is_action_button: row.is_action_button === true || row.is_action_button === 'true'
     }));
   }
 
@@ -99,14 +74,14 @@ class AppMenuService {
     const allowedFields = [
       "menu_type", "mnu_name", "mnu_image", "mnu_image_actived",
       "mnu_bg_color", "mnu_brd_color", "mnu_txt_color", "mnu_txt_color_actived",
-      "version", "file_path", "url", "is_hidden", "is_action_button", "permissions", "policy", "file_hash", "file_checksum"
+      "url", "is_hidden", "is_action_button", "app_id"
     ];
 
     for (const key of allowedFields) {
       if (data[key] !== undefined) {
         fields.push(key);
         placeholders.push(`$${idx++}`);
-        values.push(key === 'permissions' || key === 'policy' ? JSON.stringify(data[key]) : data[key]);
+        values.push(data[key]);
       }
     }
 
@@ -131,13 +106,13 @@ class AppMenuService {
     const allowedFields = [
       "menu_type", "mnu_name", "mnu_image", "mnu_image_actived",
       "mnu_bg_color", "mnu_brd_color", "mnu_txt_color", "mnu_txt_color_actived",
-      "version", "file_path", "url", "is_hidden", "is_action_button", "permissions", "policy", "file_hash", "file_checksum"
+      "url", "is_hidden", "is_action_button", "app_id"
     ];
 
     for (const key of allowedFields) {
       if (data[key] !== undefined) {
         fields.push(`${key} = $${idx++}`);
-        values.push(key === 'permissions' || key === 'policy' ? JSON.stringify(data[key]) : data[key]);
+        values.push(data[key]);
       }
     }
 
@@ -181,32 +156,11 @@ class AppMenuService {
         am.menupid,
         am.app_id,
         am.requires_auth,
-        COALESCE(ma.version, am.version) as version,
-        COALESCE(ma.file_path, am.file_path) as file_path,
-        CASE 
-          WHEN am.menu_type = 1 THEN am.url
-          WHEN am.url LIKE 'http://%' OR am.url LIKE 'https://%' THEN am.url
-          WHEN am.app_id IS NOT NULL THEN
-            CASE 
-              WHEN am.url IS NOT NULL AND am.url <> '' THEN
-                CASE 
-                  WHEN RIGHT(ma.url, 1) = '/' AND LEFT(am.url, 1) = '/' THEN ma.url || SUBSTRING(am.url, 2)
-                  WHEN RIGHT(ma.url, 1) <> '/' AND LEFT(am.url, 1) <> '/' THEN ma.url || '/' || am.url
-                  ELSE ma.url || am.url
-                END
-              ELSE ma.url
-            END
-          ELSE am.url
-        END as url,
+        am.url,
         am.is_hidden,
         am.is_action_button,
-        am.permissions,
-        am.policy,
-        COALESCE(ma.file_hash, am.file_hash) as file_hash,
-        COALESCE(ma.file_checksum, am.file_checksum) as file_checksum,
         am.created_at
       FROM app_menus am
-      LEFT JOIN mini_apps ma ON am.app_id = ma.app_id
       WHERE am.id = $1
     `;
     const res = await db.query(query, [id]);
@@ -215,16 +169,23 @@ class AppMenuService {
     }
     const row = res.rows[0];
     return {
-      ...row,
       id: parseInt(row.id),
-      menupid: row.menupid ? parseInt(row.menupid) : null,
+      key: row.key,
+      category: row.category,
+      mnu_name: row.mnu_name,
+      mnu_image: row.mnu_image,
+      mnu_image_actived: row.mnu_image_actived,
+      mnu_bg_color: row.mnu_bg_color,
+      mnu_brd_color: row.mnu_brd_color,
+      mnu_txt_color: row.mnu_txt_color,
+      mnu_txt_color_actived: row.mnu_txt_color_actived,
+      url: row.url,
+      menu_type: parseInt(row.menu_type || 0),
+      right_icon: row.right_icon,
+      mnu_order: parseInt(row.mnu_order),
       requires_auth: row.requires_auth === true || row.requires_auth === 'true',
       is_hidden: row.is_hidden === true || row.is_hidden === 'true',
-      is_action_button: row.is_action_button === true || row.is_action_button === 'true',
-      permissions: typeof row.permissions === 'string' ? JSON.parse(row.permissions) : (row.permissions || []),
-      policy: typeof row.policy === 'string' ? JSON.parse(row.policy) : (row.policy || {}),
-      file_hash: row.file_hash,
-      file_checksum: row.file_checksum
+      is_action_button: row.is_action_button === true || row.is_action_button === 'true'
     };
   }
 

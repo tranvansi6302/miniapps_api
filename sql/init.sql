@@ -24,7 +24,6 @@ CREATE TABLE IF NOT EXISTS mini_apps (
   is_actived BOOLEAN NOT NULL DEFAULT TRUE,
   terms_url TEXT,
   file_path TEXT,
-  sub_apps JSONB DEFAULT '[]'::jsonb,
   policy JSONB DEFAULT '{}'::jsonb,
   is_maintenance BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -117,9 +116,8 @@ INSERT INTO menus (key, label) VALUES
   ('app-menus', 'Cấu hình Menu Portal')
 ON CONFLICT (key) DO NOTHING;
 
--- 10. Bổ sung trường file_path và sub_apps vào bảng mini_apps nếu chưa tồn tại (Dành cho DB đã chạy từ trước)
+-- 10. Bổ sung trường file_path vào bảng mini_apps nếu chưa tồn tại (Dành cho DB đã chạy từ trước)
 ALTER TABLE mini_apps ADD COLUMN IF NOT EXISTS file_path TEXT;
-ALTER TABLE mini_apps ADD COLUMN IF NOT EXISTS sub_apps JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE mini_apps ADD COLUMN IF NOT EXISTS policy JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE mini_apps ADD COLUMN IF NOT EXISTS is_maintenance BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE account_menus ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '[]'::jsonb;
@@ -207,7 +205,7 @@ CREATE TABLE IF NOT EXISTS account_menus (
   brd_color VARCHAR(50),
   txt_color VARCHAR(50),
   txt_color_actived VARCHAR(50),
-  url VARCHAR(255) NOT NULL,
+  url VARCHAR(255),
   menu_type INT NOT NULL DEFAULT 0, -- 0: webview, 1: native
   right_icon TEXT,
   order_num INT NOT NULL DEFAULT 0,

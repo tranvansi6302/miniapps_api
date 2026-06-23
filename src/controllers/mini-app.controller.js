@@ -24,7 +24,6 @@ class MiniAppController {
         privacy_policy_url,
         file_path,
         permissions,
-        sub_apps,
         policy
       } = req.body;
 
@@ -48,7 +47,6 @@ class MiniAppController {
         privacy_policy_url,
         file_path,
         permissions,
-        sub_apps,
         policy
       });
 

@@ -7,13 +7,8 @@ class AccountMenuService {
         am.id, am.key, am.category, am.mnu_name, am.mnu_image, am.mnu_image_actived, 
         am.mnu_bg_color, am.mnu_brd_color, am.mnu_txt_color, am.mnu_txt_color_actived, 
         am.url, am.menu_type, am.right_icon, am.mnu_order, am.requires_auth, am.is_hidden, am.is_actived,
-        am.permissions, am.policy, am.app_id,
-        COALESCE(ma.version, am.version) as version, 
-        COALESCE(ma.file_path, am.file_path) as file_path, 
-        COALESCE(ma.file_hash, am.file_hash) as file_hash, 
-        COALESCE(ma.file_checksum, am.file_checksum) as file_checksum
+        am.app_id
       FROM account_menus am
-      LEFT JOIN mini_apps ma ON am.app_id = ma.app_id
       WHERE am.id = $1
     `;
     const res = await db.query(query, [id]);
@@ -39,13 +34,7 @@ class AccountMenuService {
       requires_auth: row.requires_auth === true || row.requires_auth === 'true',
       is_hidden: row.is_hidden === true || row.is_hidden === 'true',
       is_actived: row.is_actived === true || row.is_actived === 'true',
-      permissions: typeof row.permissions === 'string' ? JSON.parse(row.permissions) : (row.permissions || []),
-      policy: typeof row.policy === 'string' ? JSON.parse(row.policy) : (row.policy || {}),
-      app_id: row.app_id,
-      version: row.version,
-      file_path: row.file_path,
-      file_hash: row.file_hash,
-      file_checksum: row.file_checksum
+      app_id: row.app_id
     };
   }
 
@@ -56,13 +45,8 @@ class AccountMenuService {
         am.id, am.key, am.category, am.mnu_name, am.mnu_image, am.mnu_image_actived, 
         am.mnu_bg_color, am.mnu_brd_color, am.mnu_txt_color, am.mnu_txt_color_actived, 
         am.url, am.menu_type, am.right_icon, am.mnu_order, am.requires_auth, am.is_hidden, am.is_actived,
-        am.permissions, am.policy, am.app_id,
-        COALESCE(ma.version, am.version) as version, 
-        COALESCE(ma.file_path, am.file_path) as file_path, 
-        COALESCE(ma.file_hash, am.file_hash) as file_hash, 
-        COALESCE(ma.file_checksum, am.file_checksum) as file_checksum
+        am.app_id
       FROM account_menus am
-      LEFT JOIN mini_apps ma ON am.app_id = ma.app_id
       WHERE 1=1
     `;
     
@@ -98,13 +82,7 @@ class AccountMenuService {
         requires_auth: row.requires_auth === true || row.requires_auth === 'true',
         is_hidden: row.is_hidden === true || row.is_hidden === 'true',
         is_actived: row.is_actived === true || row.is_actived === 'true',
-        permissions: typeof row.permissions === 'string' ? JSON.parse(row.permissions) : (row.permissions || []),
-        policy: typeof row.policy === 'string' ? JSON.parse(row.policy) : (row.policy || {}),
-        app_id: row.app_id,
-        version: row.version,
-        file_path: row.file_path,
-        file_hash: row.file_hash,
-        file_checksum: row.file_checksum
+        app_id: row.app_id
       });
     }
 
@@ -117,8 +95,8 @@ class AccountMenuService {
 
   async create(data) {
     const query = `
-      INSERT INTO account_menus (key, category, mnu_name, mnu_image, mnu_image_actived, mnu_bg_color, mnu_brd_color, mnu_txt_color, mnu_txt_color_actived, url, menu_type, right_icon, mnu_order, requires_auth, is_hidden, is_actived, permissions, policy, version, file_path, file_hash, file_checksum, app_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+      INSERT INTO account_menus (key, category, mnu_name, mnu_image, mnu_image_actived, mnu_bg_color, mnu_brd_color, mnu_txt_color, mnu_txt_color_actived, url, menu_type, right_icon, mnu_order, requires_auth, is_hidden, is_actived, app_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING id
     `;
     const values = [
@@ -131,19 +109,13 @@ class AccountMenuService {
       data.mnu_brd_color || null,
       data.mnu_txt_color || null,
       data.mnu_txt_color_actived || null,
-      data.url,
+      data.url || null,
       parseInt(data.menu_type || 0),
       data.right_icon || null,
       data.mnu_order || 0,
       data.requires_auth === true,
       data.is_hidden === true,
       data.is_actived !== false,
-      JSON.stringify(data.permissions || []),
-      JSON.stringify(data.policy || {}),
-      data.version || null,
-      data.file_path || null,
-      data.file_hash || null,
-      data.file_checksum || null,
       data.app_id || null
     ];
     const res = await db.query(query, values);
@@ -153,8 +125,8 @@ class AccountMenuService {
   async update(id, data) {
     const query = `
       UPDATE account_menus
-      SET key = $1, category = $2, mnu_name = $3, mnu_image = $4, mnu_image_actived = $5, mnu_bg_color = $6, mnu_brd_color = $7, mnu_txt_color = $8, mnu_txt_color_actived = $9, url = $10, menu_type = $11, right_icon = $12, mnu_order = $13, requires_auth = $14, is_hidden = $15, is_actived = $16, permissions = $17, policy = $18, version = $19, file_path = $20, file_hash = $21, file_checksum = $22, app_id = $23
-      WHERE id = $24
+      SET key = $1, category = $2, mnu_name = $3, mnu_image = $4, mnu_image_actived = $5, mnu_bg_color = $6, mnu_brd_color = $7, mnu_txt_color = $8, mnu_txt_color_actived = $9, url = $10, menu_type = $11, right_icon = $12, mnu_order = $13, requires_auth = $14, is_hidden = $15, is_actived = $16, app_id = $17
+      WHERE id = $18
       RETURNING id
     `;
     const values = [
@@ -167,19 +139,13 @@ class AccountMenuService {
       data.mnu_brd_color || null,
       data.mnu_txt_color || null,
       data.mnu_txt_color_actived || null,
-      data.url,
+      data.url || null,
       parseInt(data.menu_type || 0),
       data.right_icon || null,
       data.mnu_order || 0,
       data.requires_auth === true,
       data.is_hidden === true,
       data.is_actived !== false,
-      JSON.stringify(data.permissions || []),
-      JSON.stringify(data.policy || {}),
-      data.version || null,
-      data.file_path || null,
-      data.file_hash || null,
-      data.file_checksum || null,
       data.app_id || null,
       id
     ];

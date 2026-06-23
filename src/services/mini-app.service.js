@@ -17,7 +17,6 @@ class MiniAppService {
     privacy_policy_url,
     file_path,
     permissions = [],
-    sub_apps = [],
     policy = {},
     file_hash,
     file_checksum
@@ -46,9 +45,9 @@ class MiniAppService {
         `INSERT INTO mini_apps (
           app_id, name, category_id, short_description, description, 
           icon_url, url, version, requires_auth, is_hidden, 
-          is_actived, terms_url, privacy_policy_url, file_path, sub_apps, policy, file_hash, file_checksum
+          is_actived, terms_url, privacy_policy_url, file_path, policy, file_hash, file_checksum
         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
          RETURNING *`,
         [
           app_id,
@@ -65,7 +64,6 @@ class MiniAppService {
           terms_url,
           privacy_policy_url,
           file_path,
-          Array.isArray(sub_apps) ? JSON.stringify(sub_apps) : (sub_apps || '[]'),
           policy && typeof policy === 'object' ? JSON.stringify(policy) : (policy || '{}'),
           file_hash || null,
           file_checksum || null
@@ -203,9 +201,7 @@ class MiniAppService {
           }
         }
         fields.push(`${field} = $${idx++}`);
-        if (field === "sub_apps") {
-          values.push(Array.isArray(data[field]) ? JSON.stringify(data[field]) : (data[field] || '[]'));
-        } else if (field === "policy") {
+        if (field === "policy") {
           values.push(data[field] && typeof data[field] === 'object' ? JSON.stringify(data[field]) : (data[field] || '{}'));
         } else {
           values.push(data[field]);
