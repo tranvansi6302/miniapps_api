@@ -11,6 +11,7 @@ const scriptRoutes = require("./script.routes");
 const dashboardRoutes = require("./dashboard.routes");
 const accountMenuRoutes = require("./account-menu.routes");
 const moderationLogRoutes = require("./moderation-log.routes");
+const miniAppGroupRoutes = require("./mini-app-group.routes");
 
 // Mount sub-routers under specific resource namespaces
 router.use("/auth", authRoutes);
@@ -23,6 +24,7 @@ router.use("/scripts", scriptRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/account-menus", accountMenuRoutes);
 router.use("/moderation-logs", moderationLogRoutes);
+router.use("/mini-app-groups", miniAppGroupRoutes);
 
 
 module.exports = router;
