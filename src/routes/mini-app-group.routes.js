@@ -8,6 +8,7 @@ router.get("/", miniAppGroupController.list);
 
 // Protected endpoints
 router.post("/", authenticateToken, miniAppGroupController.create);
+router.put("/:id", authenticateToken, miniAppGroupController.update);
 router.delete("/:id", authenticateToken, miniAppGroupController.delete);
 
 module.exports = router;

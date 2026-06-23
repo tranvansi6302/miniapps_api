@@ -1,4 +1,5 @@
 const db = require("../db");
+const miniAppService = require("./mini-app.service");
 
 class MiniAppGroupService {
   async create({ name, app_id }) {
@@ -30,39 +31,92 @@ class MiniAppGroupService {
     return true;
   }
 
-  async list(isTree = false) {
+  async update(id, { name, app_id }) {
+    const check = await db.query("SELECT id FROM mini_app_groups WHERE id = $1", [id]);
+    if (check.rows.length === 0) {
+      throw new Error("Group mapping not found");
+    }
+
+    if (app_id) {
+      const checkApp = await db.query("SELECT id FROM mini_apps WHERE app_id = $1", [app_id]);
+      if (checkApp.rows.length === 0) {
+        throw new Error("Mini App with this app_id does not exist");
+      }
+    }
+
+    const fields = [];
+    const values = [];
+    let idx = 1;
+
+    if (name !== undefined) {
+      fields.push(`name = $${idx++}`);
+      values.push(name);
+    }
+    if (app_id !== undefined) {
+      fields.push(`app_id = $${idx++}`);
+      values.push(app_id);
+    }
+
+    values.push(id);
     const query = `
-      SELECT mag.id as mapping_id, mag.name as group_name, mag.created_at as mapped_at,
-             m.*, c.name as category_name
-      FROM mini_app_groups mag
-      JOIN mini_apps m ON mag.app_id = m.app_id
-      JOIN mini_app_categories c ON m.category_id = c.id
-      ORDER BY mag.name ASC, m.id DESC
+      UPDATE mini_app_groups
+      SET ${fields.join(", ")}
+      WHERE id = $${idx}
+      RETURNING *
     `;
-    const result = await db.query(query);
-    const mappings = result.rows.map(row => ({
-      ...row,
-      id: parseInt(row.id),
-      category_id: parseInt(row.category_id),
-      mapping_id: parseInt(row.mapping_id)
-    }));
+    const result = await db.query(query, values);
+    return result.rows[0];
+  }
+
+  async list(isTree = false) {
+    const groupsResult = await db.query("SELECT id as mapping_id, name as group_name, app_id as parent_app_id, created_at as mapped_at FROM mini_app_groups ORDER BY name ASC");
+    const parentGroups = groupsResult.rows;
+
+    const allMappings = [];
+
+    for (const group of parentGroups) {
+      const query = `
+        SELECT m.*, c.name as category_name
+        FROM mini_apps m
+        JOIN mini_app_categories c ON m.category_id = c.id
+        WHERE m.app_id LIKE $1 || '%'
+        ORDER BY m.id DESC
+      `;
+      const appsResult = await db.query(query, [group.parent_app_id]);
+      
+      const childApps = appsResult.rows.map(row => ({
+        ...row,
+        id: parseInt(row.id),
+        category_id: parseInt(row.category_id),
+        mapping_id: parseInt(group.mapping_id),
+        group_name: group.group_name,
+        parent_app_id: group.parent_app_id
+      }));
+
+      allMappings.push(...childApps);
+    }
+
+    // Resolve group inheritance to get policy, permissions, file_hash, file_checksum, group_id, etc.
+    const resolvedMappings = await miniAppService.resolveGroupInheritance(allMappings);
 
     if (isTree) {
       const groupsMap = {};
-      for (const item of mappings) {
+      for (const item of resolvedMappings) {
         if (!groupsMap[item.group_name]) {
           groupsMap[item.group_name] = {
             name: item.group_name,
+            parent_app_id: item.parent_app_id,
+            mapping_id: item.mapping_id,
             children: []
           };
         }
-        const { mapping_id, group_name, mapped_at, ...appInfo } = item;
+        const { mapping_id, parent_app_id, ...appInfo } = item;
         groupsMap[item.group_name].children.push(appInfo);
       }
       return Object.values(groupsMap);
     }
 
-    return mappings;
+    return resolvedMappings;
   }
 }
 

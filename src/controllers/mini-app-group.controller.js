@@ -41,6 +41,23 @@ class MiniAppGroupController {
       next(error);
     }
   }
+
+  async update(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { name, app_id } = req.body;
+      const mapping = await miniAppGroupService.update(id, { name, app_id });
+      return responseHelper.success(res, mapping, "Mini App Group updated successfully");
+    } catch (error) {
+      if (error.message.includes("not found")) {
+        return responseHelper.error(res, error.message, null, 404);
+      }
+      if (error.message.includes("does not exist")) {
+        return responseHelper.error(res, error.message, null, 400);
+      }
+      next(error);
+    }
+  }
 }
 
 module.exports = new MiniAppGroupController();

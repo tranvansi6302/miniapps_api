@@ -1,6 +1,81 @@
 const db = require("../db");
+const { propagateGroupUpdates } = require("../utils/group.helper");
 
 class MiniAppService {
+  async resolveGroupInheritance(apps) {
+    if (!apps || apps.length === 0) return apps;
+
+    // Fetch all parent groups
+    const groupsRes = await db.query("SELECT id, name, app_id FROM mini_app_groups");
+    if (groupsRes.rows.length === 0) return apps;
+
+    // Fetch parent apps themselves
+    const parentAppIds = groupsRes.rows.map(g => g.app_id);
+    const parentAppsRes = await db.query(
+      `SELECT m.*, c.name as category_name,
+       COALESCE(
+         (SELECT json_agg(p.permission_code) FROM mini_app_permissions p WHERE p.mini_app_id = m.id), 
+         '[]'::json
+       ) as permissions
+       FROM mini_apps m
+       JOIN mini_app_categories c ON m.category_id = c.id
+       WHERE m.app_id = ANY($1)`,
+      [parentAppIds]
+    );
+
+    const parentAppsMap = {};
+    for (const parent of parentAppsRes.rows) {
+      parentAppsMap[parent.app_id] = parent;
+    }
+
+    const groupsMap = {};
+    for (const group of groupsRes.rows) {
+      groupsMap[group.app_id] = group;
+    }
+
+    return apps.map(app => {
+      // Find matching group parent prefix
+      const matchingGroupParentId = parentAppIds.find(parentAppId => 
+        app.app_id.startsWith(parentAppId)
+      );
+
+      if (matchingGroupParentId) {
+        const parentApp = parentAppsMap[matchingGroupParentId];
+        const group = groupsMap[matchingGroupParentId];
+
+        // If it is a child app (not the parent itself)
+        if (app.app_id !== matchingGroupParentId && parentApp) {
+          return {
+            ...app,
+            category_id: parseInt(parentApp.category_id),
+            category_name: parentApp.category_name,
+            version: parentApp.version,
+            file_path: parentApp.file_path,
+            file_hash: parentApp.file_hash,
+            file_checksum: parentApp.file_checksum,
+            requires_auth: parentApp.requires_auth,
+            is_maintenance: parentApp.is_maintenance,
+            icon_url: parentApp.icon_url,
+            policy: parentApp.policy,
+            permissions: parentApp.permissions || [],
+            group_id: group ? parseInt(group.id) : null,
+            group_name: group ? group.name : null,
+            group_app_id: matchingGroupParentId
+          };
+        } else if (group) {
+          // It's the parent app itself
+          return {
+            ...app,
+            group_id: parseInt(group.id),
+            group_name: group.name,
+            group_app_id: matchingGroupParentId
+          };
+        }
+      }
+      return app;
+    });
+  }
+
   async create({
     app_id,
     name,
@@ -106,7 +181,8 @@ class MiniAppService {
     if (result.rows.length === 0) {
       throw new Error("Mini App not found");
     }
-    const app = result.rows[0];
+    const resolved = await this.resolveGroupInheritance(result.rows);
+    const app = resolved[0];
     return { ...app, id: parseInt(app.id), category_id: parseInt(app.category_id) };
   }
 
@@ -125,22 +201,31 @@ class MiniAppService {
     if (result.rows.length === 0) {
       throw new Error("Mini App not found");
     }
-    const app = result.rows[0];
+    const resolved = await this.resolveGroupInheritance(result.rows);
+    const app = resolved[0];
     return { ...app, id: parseInt(app.id), category_id: parseInt(app.category_id) };
   }
 
   async checkAccessByAppId(appId, userId) {
-    // Check app exists
+    const parentGroupsRes = await db.query(
+      "SELECT DISTINCT app_id FROM mini_app_groups WHERE $1 LIKE app_id || '%'",
+      [appId]
+    );
+
+    let targetAppId = appId;
+    if (parentGroupsRes.rows.length > 0) {
+      targetAppId = parentGroupsRes.rows[0].app_id;
+    }
+
     const appCheck = await db.query(
       `SELECT id FROM mini_apps WHERE app_id = $1`,
-      [appId]
+      [targetAppId]
     );
     if (appCheck.rows.length === 0) {
       throw new Error("Mini App not found");
     }
     const app = appCheck.rows[0];
 
-    // Check if user is a member
     const memberCheck = await db.query(
       `SELECT id FROM mini_app_members WHERE mini_app_id = $1 AND user_id = $2 AND status = 1`,
       [app.id, userId]
@@ -232,7 +317,7 @@ class MiniAppService {
         );
       }
 
-      let app;
+       let app;
       if (fields.length > 0) {
         values.push(id);
         const query = `
@@ -243,6 +328,15 @@ class MiniAppService {
         `;
         const result = await client.query(query, values);
         app = result.rows[0];
+
+        // Propagate updates to all other apps in the same group
+        await propagateGroupUpdates(client, app.app_id, {
+          version: data.version,
+          file_path: data.file_path,
+          file_hash: data.file_hash,
+          file_checksum: data.file_checksum,
+          url: data.url
+        });
       } else {
         const result = await client.query("SELECT * FROM mini_apps WHERE id = $1", [id]);
         app = result.rows[0];
@@ -367,11 +461,12 @@ class MiniAppService {
     query += ` ORDER BY m.id DESC`;
 
     const result = await db.query(query, values);
-    return result.rows.map(row => ({
+    const rawApps = result.rows.map(row => ({
       ...row,
       id: parseInt(row.id),
       category_id: parseInt(row.category_id)
     }));
+    return this.resolveGroupInheritance(rawApps);
   }
 
   async getRolesMetadata() {

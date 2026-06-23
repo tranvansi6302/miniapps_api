@@ -1,5 +1,6 @@
 const db = require("../db");
 const moderationLogService = require("./moderation-log.service");
+const { propagateGroupUpdates } = require("../utils/group.helper");
 
 class MiniAppBuildService {
   async list(miniAppId) {
@@ -91,6 +92,18 @@ class MiniAppBuildService {
            WHERE id = $5`,
           [buildVersion, buildFilePath, buildFileHash, buildFileChecksum, miniAppId]
         );
+
+        // Fetch app_id and propagate to the group
+        const appRes = await client.query("SELECT app_id FROM mini_apps WHERE id = $1", [miniAppId]);
+        if (appRes.rows.length > 0) {
+          const app_id = appRes.rows[0].app_id;
+          await propagateGroupUpdates(client, app_id, {
+            version: buildVersion,
+            file_path: buildFilePath,
+            file_hash: buildFileHash,
+            file_checksum: buildFileChecksum
+          });
+        }
       }
 
       // Log moderation event
