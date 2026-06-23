@@ -22,6 +22,7 @@ class AppMenuService {
         am.url,
         am.is_hidden,
         am.is_action_button,
+        am.policy,
         am.created_at
       FROM app_menus am
     `;
@@ -191,6 +192,7 @@ class AppMenuService {
         am.url,
         am.is_hidden,
         am.is_action_button,
+        am.policy,
         am.created_at
       FROM app_menus am
       WHERE am.id = $1
@@ -227,7 +229,8 @@ class AppMenuService {
       mnu_order: parseInt(row.mnu_order),
       requires_auth: row.requires_auth === true || row.requires_auth === 'true',
       is_hidden: row.is_hidden === true || row.is_hidden === 'true',
-      is_action_button: row.is_action_button === true || row.is_action_button === 'true'
+      is_action_button: row.is_action_button === true || row.is_action_button === 'true',
+      policy: row.policy
     };
   }
 

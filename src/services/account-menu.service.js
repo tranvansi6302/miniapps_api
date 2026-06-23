@@ -8,7 +8,7 @@ class AccountMenuService {
         am.id, am.key, am.category, am.mnu_name, am.mnu_image, am.mnu_image_actived, 
         am.mnu_bg_color, am.mnu_brd_color, am.mnu_txt_color, am.mnu_txt_color_actived, 
         am.url, am.menu_type, am.right_icon, am.mnu_order, am.requires_auth, am.is_hidden, am.is_actived,
-        am.app_id
+        am.app_id, am.policy
       FROM account_menus am
       WHERE am.id = $1
     `;
@@ -45,7 +45,8 @@ class AccountMenuService {
       requires_auth: row.requires_auth === true || row.requires_auth === 'true',
       is_hidden: row.is_hidden === true || row.is_hidden === 'true',
       is_actived: row.is_actived === true || row.is_actived === 'true',
-      app_id: row.app_id
+      app_id: row.app_id,
+      policy: row.policy
     };
   }
 
@@ -57,7 +58,7 @@ class AccountMenuService {
         am.id, am.key, am.category, am.mnu_name, am.mnu_image, am.mnu_image_actived, 
         am.mnu_bg_color, am.mnu_brd_color, am.mnu_txt_color, am.mnu_txt_color_actived, 
         am.url, am.menu_type, am.right_icon, am.mnu_order, am.requires_auth, am.is_hidden, am.is_actived,
-        am.app_id
+        am.app_id, am.policy
       FROM account_menus am
       WHERE 1=1
     `;
@@ -117,7 +118,8 @@ class AccountMenuService {
         requires_auth: row.requires_auth === true || row.requires_auth === 'true',
         is_hidden: row.is_hidden === true || row.is_hidden === 'true',
         is_actived: row.is_actived === true || row.is_actived === 'true',
-        app_id: row.app_id
+        app_id: row.app_id,
+        policy: row.policy
       });
     }
 

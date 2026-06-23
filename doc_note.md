@@ -55,7 +55,12 @@ Khi các ứng dụng Client (như Mobile App) gọi đến các API lấy menu 
   "requires_auth": false,
   "url": "https://homebooking-user.vercel.app/#/", // Tự động lấy từ app_id: user.global.homebooking.home
   "is_hidden": false,
-  "is_action_button": false
+  "is_action_button": false,
+  "policy": {
+    "allowedDomains": ["mini.example.com", "cdn.example.com"],
+    "allowExternalNavigation": false,
+    "allowFileDownload": true
+  }
 }
 ```
 
@@ -84,7 +89,12 @@ Khi các ứng dụng Client (như Mobile App) gọi đến các API lấy menu 
         "requires_auth": true,
         "is_hidden": false,
         "is_actived": true,
-        "app_id": "user.global.homebooking.profile"
+        "app_id": "user.global.homebooking.profile",
+        "policy": {
+          "allowedDomains": ["mini.example.com", "cdn.example.com"],
+          "allowExternalNavigation": false,
+          "allowFileDownload": true
+        }
       }
     ]
   }
