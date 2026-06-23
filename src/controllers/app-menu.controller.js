@@ -6,12 +6,12 @@ const path = require("path");
 class AppMenuController {
   async getAll(req, res, next) {
     try {
-      const { position, tree } = req.query;
+      const { position, tree, app_id } = req.query;
       let data;
       if (tree === "true" || tree === true) {
-        data = await appMenuService.getTree(position);
+        data = await appMenuService.getTree(position, app_id);
       } else {
-        data = await appMenuService.getAll(position);
+        data = await appMenuService.getAll(position, app_id);
       }
       return responseHelper.success(res, data, "App menus fetched successfully");
     } catch (error) {

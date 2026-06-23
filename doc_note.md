@@ -31,6 +31,10 @@ Khi các ứng dụng Client (như Mobile App) gọi đến các API lấy menu 
 
 ### 2.1. API App Menus (Thanh điều hướng chính)
 * **Endpoint**: `GET /api/app-menus`
+* **Tham số Query (Tùy chọn)**:
+  * `position`: Lọc theo vị trí (e.g. `BOTTOM_NAV`, `SIDEBAR`).
+  * `tree`: `true` để lấy theo cấu trúc cây thư mục cha-con.
+  * `app_id`: Lọc riêng các menu liên kết với mã định danh Mini App chỉ định (e.g. `/api/app-menus?app_id=user.global.homebooking.home`).
 * **Cơ chế hoạt động**: Đối với các menu có `menu_type = 0` (Webview) và có khai báo `app_id`, Backend sẽ tìm Mini App tương ứng trong bảng `mini_apps` rồi gán URL của nó vào trường `url` trước khi trả về cho Client.
 * **Cấu trúc JSON trả về mẫu**:
 ```json
@@ -57,6 +61,9 @@ Khi các ứng dụng Client (như Mobile App) gọi đến các API lấy menu 
 
 ### 2.2. API Account Menus (Menu trong trang cá nhân)
 * **Endpoint**: `GET /api/account-menus`
+* **Tham số Query (Tùy chọn)**:
+  * `include_inactive`: `true` để lấy cả các menu đang bị khóa/ẩn (`is_actived = false`).
+  * `app_id`: Lọc các menu cá nhân liên kết với mã định danh Mini App chỉ định (e.g. `/api/account-menus?app_id=user.global.homebooking.profile`).
 * **Cơ chế hoạt động**: Tương tự như trên, tự động đối chiếu `app_id` của từng item trong các phân mục cá nhân để lấy ra URL mới nhất của trang con tương ứng. Trả về cấu trúc được phân nhóm theo `category`.
 * **Cấu trúc JSON trả về mẫu**:
 ```json

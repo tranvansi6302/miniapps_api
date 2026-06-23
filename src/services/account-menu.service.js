@@ -51,6 +51,7 @@ class AccountMenuService {
 
   async getAll(queryOptions = {}) {
     const includeInactive = queryOptions.include_inactive === 'true' || queryOptions.include_inactive === true;
+    const appId = queryOptions.app_id;
     let query = `
       SELECT 
         am.id, am.key, am.category, am.mnu_name, am.mnu_image, am.mnu_image_actived, 
@@ -60,13 +61,19 @@ class AccountMenuService {
       FROM account_menus am
       WHERE 1=1
     `;
+    const values = [];
+    let idx = 1;
     
     if (!includeInactive) {
       query += ` AND am.is_actived = true`;
     }
+    if (appId) {
+      query += ` AND am.app_id = $${idx++}`;
+      values.push(appId);
+    }
     
     query += ` ORDER BY am.mnu_order ASC, am.id ASC`;
-    const result = await db.query(query);
+    const result = await db.query(query, values);
 
     // Fetch all mini apps once to map the URL dynamically
     const allApps = await miniAppService.list();

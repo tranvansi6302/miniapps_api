@@ -2,7 +2,7 @@ const db = require("../db");
 const miniAppService = require("./mini-app.service");
 
 class AppMenuService {
-  async getAll(position) {
+  async getAll(position, appId) {
     let query = `
       SELECT 
         am.id,
@@ -26,9 +26,20 @@ class AppMenuService {
       FROM app_menus am
     `;
     const values = [];
+    const conditions = [];
+    let idx = 1;
+
     if (position) {
-      query += ` WHERE am.mnu_position = $1`;
+      conditions.push(`am.mnu_position = $${idx++}`);
       values.push(position);
+    }
+    if (appId) {
+      conditions.push(`am.app_id = $${idx++}`);
+      values.push(appId);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
     }
     query += ` ORDER BY am.mnu_order ASC, am.id ASC`;
 
@@ -63,8 +74,8 @@ class AppMenuService {
     });
   }
 
-  async getTree(position) {
-    const list = await this.getAll(position);
+  async getTree(position, appId) {
+    const list = await this.getAll(position, appId);
     const map = {};
     const tree = [];
 
