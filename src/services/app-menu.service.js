@@ -22,7 +22,6 @@ class AppMenuService {
         am.url,
         am.is_hidden,
         am.is_action_button,
-        am.policy,
         am.created_at
       FROM app_menus am
     `;
@@ -55,11 +54,13 @@ class AppMenuService {
 
     return result.rows.map(row => {
       let url = row.url;
+      let miniapp_id = null;
       // If it is a webview menu and has app_id, resolve its url from mini_apps
       if (parseInt(row.menu_type || 0) === 0 && row.app_id) {
         const matchedApp = appsMap[row.app_id];
         if (matchedApp) {
           url = matchedApp.url;
+          miniapp_id = parseInt(matchedApp.id);
         }
       }
 
@@ -68,6 +69,7 @@ class AppMenuService {
         id: parseInt(row.id),
         menupid: row.menupid ? parseInt(row.menupid) : null,
         url: url,
+        miniapp_id: miniapp_id,
         requires_auth: row.requires_auth === true || row.requires_auth === 'true',
         is_hidden: row.is_hidden === true || row.is_hidden === 'true',
         is_action_button: row.is_action_button === true || row.is_action_button === 'true'
@@ -192,7 +194,6 @@ class AppMenuService {
         am.url,
         am.is_hidden,
         am.is_action_button,
-        am.policy,
         am.created_at
       FROM app_menus am
       WHERE am.id = $1
@@ -203,11 +204,13 @@ class AppMenuService {
     }
     const row = res.rows[0];
     let url = row.url;
+    let miniapp_id = null;
     if (parseInt(row.menu_type || 0) === 0 && row.app_id) {
       try {
         const matchedApp = await miniAppService.getByAppId(row.app_id);
         if (matchedApp) {
           url = matchedApp.url;
+          miniapp_id = parseInt(matchedApp.id);
         }
       } catch (_) {}
     }
@@ -224,13 +227,13 @@ class AppMenuService {
       mnu_txt_color: row.mnu_txt_color,
       mnu_txt_color_actived: row.mnu_txt_color_actived,
       url: url,
+      miniapp_id: miniapp_id,
       menu_type: parseInt(row.menu_type || 0),
       right_icon: row.right_icon,
       mnu_order: parseInt(row.mnu_order),
       requires_auth: row.requires_auth === true || row.requires_auth === 'true',
       is_hidden: row.is_hidden === true || row.is_hidden === 'true',
-      is_action_button: row.is_action_button === true || row.is_action_button === 'true',
-      policy: row.policy
+      is_action_button: row.is_action_button === true || row.is_action_button === 'true'
     };
   }
 

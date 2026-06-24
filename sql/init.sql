@@ -208,7 +208,7 @@ CREATE TABLE IF NOT EXISTS account_menus (
   url VARCHAR(255),
   menu_type INT NOT NULL DEFAULT 0, -- 0: webview, 1: native
   right_icon TEXT,
-  order_num INT NOT NULL DEFAULT 0,
+  mnu_order INT NOT NULL DEFAULT 0,
   requires_auth BOOLEAN NOT NULL DEFAULT FALSE,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   permissions JSONB DEFAULT '[]'::jsonb,
@@ -217,4 +217,4 @@ CREATE TABLE IF NOT EXISTS account_menus (
 );
 
 CREATE INDEX IF NOT EXISTS idx_account_menus_category ON account_menus(category);
-CREATE INDEX IF NOT EXISTS idx_account_menus_order_num ON account_menus(order_num);
+CREATE INDEX IF NOT EXISTS idx_account_menus_mnu_order ON account_menus(mnu_order);
