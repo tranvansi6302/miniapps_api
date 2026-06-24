@@ -5,72 +5,86 @@ class MiniAppService {
   async resolveGroupInheritance(apps) {
     if (!apps || apps.length === 0) return apps;
 
+    let resolvedApps = apps;
+
     // Fetch all parent groups
     const groupsRes = await db.query("SELECT id, name, app_id FROM mini_app_groups");
-    if (groupsRes.rows.length === 0) return apps;
-
-    // Fetch parent apps themselves
-    const parentAppIds = groupsRes.rows.map(g => g.app_id);
-    const parentAppsRes = await db.query(
-      `SELECT m.*, c.name as category_name,
-       COALESCE(
-         (SELECT json_agg(p.permission_code) FROM mini_app_permissions p WHERE p.mini_app_id = m.id), 
-         '[]'::json
-       ) as permissions
-       FROM mini_apps m
-       JOIN mini_app_categories c ON m.category_id = c.id
-       WHERE m.app_id = ANY($1)`,
-      [parentAppIds]
-    );
-
-    const parentAppsMap = {};
-    for (const parent of parentAppsRes.rows) {
-      parentAppsMap[parent.app_id] = parent;
-    }
-
-    const groupsMap = {};
-    for (const group of groupsRes.rows) {
-      groupsMap[group.app_id] = group;
-    }
-
-    return apps.map(app => {
-      // Find matching group parent prefix
-      const matchingGroupParentId = parentAppIds.find(parentAppId => 
-        app.app_id.startsWith(parentAppId)
+    if (groupsRes.rows.length > 0) {
+      // Fetch parent apps themselves
+      const parentAppIds = groupsRes.rows.map(g => g.app_id);
+      const parentAppsRes = await db.query(
+        `SELECT m.*, c.name as category_name,
+         COALESCE(
+           (SELECT json_agg(p.permission_code) FROM mini_app_permissions p WHERE p.mini_app_id = m.id), 
+           '[]'::json
+         ) as permissions
+         FROM mini_apps m
+         JOIN mini_app_categories c ON m.category_id = c.id
+         WHERE m.app_id = ANY($1)`,
+        [parentAppIds]
       );
 
-      if (matchingGroupParentId) {
-        const parentApp = parentAppsMap[matchingGroupParentId];
-        const group = groupsMap[matchingGroupParentId];
+      const parentAppsMap = {};
+      for (const parent of parentAppsRes.rows) {
+        parentAppsMap[parent.app_id] = parent;
+      }
 
-        // If it is a child app (not the parent itself)
-        if (app.app_id !== matchingGroupParentId && parentApp) {
-          return {
-            ...app,
-            category_id: parseInt(parentApp.category_id),
-            category_name: parentApp.category_name,
-            version: parentApp.version,
-            file_path: parentApp.file_path,
-            file_hash: parentApp.file_hash,
-            file_checksum: parentApp.file_checksum,
-            requires_auth: parentApp.requires_auth,
-            is_maintenance: parentApp.is_maintenance,
-            icon_url: parentApp.icon_url,
-            policy: parentApp.policy,
-            permissions: parentApp.permissions || [],
-            group_id: group ? parseInt(group.id) : null,
-            group_name: group ? group.name : null,
-            group_app_id: matchingGroupParentId
-          };
-        } else if (group) {
-          // It's the parent app itself
-          return {
-            ...app,
-            group_id: parseInt(group.id),
-            group_name: group.name,
-            group_app_id: matchingGroupParentId
-          };
+      const groupsMap = {};
+      for (const group of groupsRes.rows) {
+        groupsMap[group.app_id] = group;
+      }
+
+      resolvedApps = apps.map(app => {
+        // Find matching group parent prefix
+        const matchingGroupParentId = parentAppIds.find(parentAppId => 
+          app.app_id.startsWith(parentAppId)
+        );
+
+        if (matchingGroupParentId) {
+          const parentApp = parentAppsMap[matchingGroupParentId];
+          const group = groupsMap[matchingGroupParentId];
+
+          // If it is a child app (not the parent itself)
+          if (app.app_id !== matchingGroupParentId && parentApp) {
+            return {
+              ...app,
+              category_id: parseInt(parentApp.category_id),
+              category_name: parentApp.category_name,
+              version: parentApp.version,
+              file_path: parentApp.file_path,
+              file_hash: parentApp.file_hash,
+              file_checksum: parentApp.file_checksum,
+              requires_auth: parentApp.requires_auth,
+              is_maintenance: parentApp.is_maintenance,
+              icon_url: parentApp.icon_url,
+              policy: parentApp.policy,
+              permissions: parentApp.permissions || [],
+              group_id: group ? parseInt(group.id) : null,
+              group_name: group ? group.name : null,
+              group_app_id: matchingGroupParentId
+            };
+          } else if (group) {
+            // It's the parent app itself
+            return {
+              ...app,
+              group_id: parseInt(group.id),
+              group_name: group.name,
+              group_app_id: matchingGroupParentId
+            };
+          }
         }
+        return app;
+      });
+    }
+
+    // Default empty/null permissions to ['camera', 'location', 'storage']
+    return resolvedApps.map(app => {
+      const perms = app.permissions;
+      if (!perms || !Array.isArray(perms) || perms.length === 0) {
+        return {
+          ...app,
+          permissions: ["camera", "location", "storage"]
+        };
       }
       return app;
     });
@@ -157,7 +171,10 @@ class MiniAppService {
       }
 
       await client.query('COMMIT');
-      return { ...app, id: parseInt(app.id), category_id: parseInt(app.category_id), permissions };
+      const returnedPerms = (!permissions || !Array.isArray(permissions) || permissions.length === 0)
+        ? ["camera", "location", "storage"]
+        : permissions;
+      return { ...app, id: parseInt(app.id), category_id: parseInt(app.category_id), permissions: returnedPerms };
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;
