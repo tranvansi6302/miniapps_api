@@ -2,7 +2,7 @@ const db = require("./db");
 
 async function seedAccountMenus() {
   try {
-    console.log("🚀 Seeding updated Account Menus...");
+    console.log("🚀 Seeding updated Account Menus with M_ACC_T_ACCOUNT_GROUP and M_ACC_T_SP_GROUP...");
 
     // Ensure columns exist
     await db.query("ALTER TABLE account_menus ADD COLUMN IF NOT EXISTS menu_type INT NOT NULL DEFAULT 0");
@@ -19,10 +19,10 @@ async function seedAccountMenus() {
     await db.query("TRUNCATE TABLE account_menus RESTART IDENTITY CASCADE");
 
     const menus = [
-      // Nhóm 1: TÀI KHOẢN (ACCOUNT)
+      // Nhóm 1: M_ACC_T_ACCOUNT_GROUP (TÀI KHOẢN)
       {
-        key: "hb-ac-profile",
-        category: "TÀI KHOẢN",
+        key: "M_ACC_T_PROFILE",
+        category: "M_ACC_T_ACCOUNT_GROUP",
         mnu_name: "Thông tin cá nhân",
         mnu_image: "https://img.icons8.com/fluency/96/user-male-circle.png",
         mnu_image_actived: "https://img.icons8.com/fluency/96/user-male-circle.png",
@@ -37,8 +37,8 @@ async function seedAccountMenus() {
         requires_auth: true
       },
       {
-        key: "hb-ac-change-password",
-        category: "TÀI KHOẢN",
+        key: "M_ACC_T_CHANGE_PASS",
+        category: "M_ACC_T_ACCOUNT_GROUP",
         mnu_name: "Đổi mật khẩu",
         mnu_image: "https://img.icons8.com/fluency/96/password.png",
         mnu_image_actived: "https://img.icons8.com/fluency/96/password.png",
@@ -53,10 +53,10 @@ async function seedAccountMenus() {
         requires_auth: true
       },
 
-      // Nhóm 2: HỖ TRỢ (SUPPORT)
+      // Nhóm 2: M_ACC_T_SP_GROUP (HỖ TRỢ)
       {
-        key: "hb-ac-language",
-        category: "HỖ TRỢ",
+        key: "M_ACC_T_LANG",
+        category: "M_ACC_T_SP_GROUP",
         mnu_name: "Ngôn ngữ",
         mnu_image: "https://img.icons8.com/fluency/96/language.png",
         mnu_image_actived: "https://img.icons8.com/fluency/96/language.png",
@@ -71,8 +71,8 @@ async function seedAccountMenus() {
         requires_auth: false
       },
       {
-        key: "hb-ac-qr-scan",
-        category: "HỖ TRỢ",
+        key: "M_ACC_T_SCAN_QR",
+        category: "M_ACC_T_SP_GROUP",
         mnu_name: "Quét mã QR",
         mnu_image: "https://img.icons8.com/fluency/96/qr-code.png",
         mnu_image_actived: "https://img.icons8.com/fluency/96/qr-code.png",
@@ -114,7 +114,7 @@ async function seedAccountMenus() {
       );
     }
 
-    console.log("🟢 Account menus successfully updated in Database!");
+    console.log("🟢 Account menus successfully seeded in Database!");
     process.exit(0);
   } catch (error) {
     console.error("🔴 Error seeding account menus:", error.message);
