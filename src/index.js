@@ -74,9 +74,8 @@ app.use((req, res) => {
 // Global central Error Handler Middleware
 app.use(errorHandler);
 
-// Execute schema check, then launch Express Server
-initDb().then(() => {
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Server launched successfully on port ${PORT}`);
-  });
+// Start Express Server immediately on PORT and 0.0.0.0, then initialize DB in background
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server launched successfully on port ${PORT}`);
+  initDb();
 });
