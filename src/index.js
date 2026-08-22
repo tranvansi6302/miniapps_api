@@ -76,7 +76,7 @@ app.use(errorHandler);
 
 // Execute schema check, then launch Express Server
 initDb().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server launched successfully on http://localhost:${PORT}`);
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Server launched successfully on port ${PORT}`);
   });
 });
