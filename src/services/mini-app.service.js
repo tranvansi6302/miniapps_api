@@ -356,6 +356,21 @@ class MiniAppService {
     await db.query("DELETE FROM mini_apps WHERE id = $1", [id]);
     return true;
   }
+
+  async list(params) {
+    return await this.getAll(params || {});
+  }
+
+  async getByAppId(appId) {
+    const res = await db.query("SELECT * FROM mini_apps WHERE app_id = $1", [appId]);
+    if (res.rows.length === 0) return null;
+    const app = res.rows[0];
+    app.id = parseInt(app.id);
+    app.category_id = parseInt(app.category_id);
+    app.parent_id = parseInt(app.parent_id || 0);
+    const resolved = await this.resolveGroupInheritance([app]);
+    return resolved[0];
+  }
 }
 
 module.exports = new MiniAppService();

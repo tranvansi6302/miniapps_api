@@ -79,7 +79,8 @@ class AccountMenuService {
     const result = await db.query(query, values);
 
     // Fetch all mini apps once to map the URL dynamically
-    const allApps = await miniAppService.list();
+    const allAppsRes = await miniAppService.getAll({ page: 1, limit: 1000 });
+    const allApps = allAppsRes.data || [];
     const appsMap = {};
     for (const app of allApps) {
       appsMap[app.app_id] = app;
