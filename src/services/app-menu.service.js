@@ -46,8 +46,7 @@ class AppMenuService {
     const result = await db.query(query, values);
 
     // Fetch all mini apps once to map the URL dynamically
-    const allAppsRes = await miniAppService.getAll({ page: 1, limit: 1000 });
-    const allApps = allAppsRes.data || [];
+    const allApps = await miniAppService.list();
     const appsMap = {};
     for (const app of allApps) {
       appsMap[app.app_id] = app;
@@ -208,10 +207,10 @@ class AppMenuService {
     let miniapp_id = null;
     if (parseInt(row.menu_type || 0) === 0 && row.app_id) {
       try {
-        const matchedAppRes = await db.query("SELECT id, url FROM mini_apps WHERE app_id = $1", [row.app_id]);
-        if (matchedAppRes.rows.length > 0) {
-          url = matchedAppRes.rows[0].url;
-          miniapp_id = parseInt(matchedAppRes.rows[0].id);
+        const matchedApp = await miniAppService.getByAppId(row.app_id);
+        if (matchedApp) {
+          url = matchedApp.url;
+          miniapp_id = parseInt(matchedApp.id);
         }
       } catch (_) {}
     }

@@ -8,37 +8,69 @@ class MiniAppGroupService {
     if (checkApp.rows.length === 0) {
       throw new Error("Mini App with this app_id does not exist");
     }
-    return checkApp.rows[0];
+
+    // Check if mapping already exists
+    const checkDup = await db.query("SELECT id FROM mini_app_groups WHERE name = $1 AND app_id = $2", [name, app_id]);
+    if (checkDup.rows.length > 0) {
+      return checkDup.rows[0];
+    }
+
+    const result = await db.query(
+      "INSERT INTO mini_app_groups (name, app_id) VALUES ($1, $2) RETURNING *",
+      [name, app_id]
+    );
+    return result.rows[0];
   }
 
   async delete(id) {
-    // If id is a parent mini_apps id, deleting parent deletes children via CASCADE
-    const check = await db.query("SELECT id FROM mini_apps WHERE id = $1", [id]);
+    const check = await db.query("SELECT id FROM mini_app_groups WHERE id = $1", [id]);
     if (check.rows.length === 0) {
-      throw new Error("Mini App group not found");
+      throw new Error("Group mapping not found");
     }
-    await db.query("DELETE FROM mini_apps WHERE id = $1", [id]);
+    await db.query("DELETE FROM mini_app_groups WHERE id = $1", [id]);
     return true;
   }
 
   async update(id, { name, app_id }) {
-    const check = await db.query("SELECT id FROM mini_apps WHERE id = $1", [id]);
+    const check = await db.query("SELECT id FROM mini_app_groups WHERE id = $1", [id]);
     if (check.rows.length === 0) {
-      throw new Error("Mini App group not found");
+      throw new Error("Group mapping not found");
     }
 
-    if (name) {
-      await db.query("UPDATE mini_apps SET name = $1 WHERE id = $2", [name, id]);
+    if (app_id) {
+      const checkApp = await db.query("SELECT id FROM mini_apps WHERE app_id = $1", [app_id]);
+      if (checkApp.rows.length === 0) {
+        throw new Error("Mini App with this app_id does not exist");
+      }
     }
-    return (await db.query("SELECT * FROM mini_apps WHERE id = $1", [id])).rows[0];
+
+    const fields = [];
+    const values = [];
+    let idx = 1;
+
+    if (name !== undefined) {
+      fields.push(`name = $${idx++}`);
+      values.push(name);
+    }
+    if (app_id !== undefined) {
+      fields.push(`app_id = $${idx++}`);
+      values.push(app_id);
+    }
+
+    values.push(id);
+    const query = `
+      UPDATE mini_app_groups
+      SET ${fields.join(", ")}
+      WHERE id = $${idx}
+      RETURNING *
+    `;
+    const result = await db.query(query, values);
+    return result.rows[0];
   }
 
   async list(isTree = false) {
-    // Query all Parent apps directly from mini_apps (where parent_id IS NULL)
-    const parentsResult = await db.query(
-      "SELECT id as mapping_id, name as group_name, app_id as parent_app_id, created_at as mapped_at FROM mini_apps WHERE parent_id IS NULL ORDER BY name ASC"
-    );
-    const parentGroups = parentsResult.rows;
+    const groupsResult = await db.query("SELECT id as mapping_id, name as group_name, app_id as parent_app_id, created_at as mapped_at FROM mini_app_groups ORDER BY name ASC");
+    const parentGroups = groupsResult.rows;
 
     const allMappings = [];
 
@@ -47,11 +79,11 @@ class MiniAppGroupService {
         SELECT m.*, c.name as category_name
         FROM mini_apps m
         JOIN mini_app_categories c ON m.category_id = c.id
-        WHERE m.parent_id = $1 OR m.app_id = $2 OR m.app_id LIKE $2 || '%'
+        WHERE m.app_id LIKE $1 || '%'
         ORDER BY m.id DESC
       `;
-      const appsResult = await db.query(query, [group.mapping_id, group.parent_app_id]);
-
+      const appsResult = await db.query(query, [group.parent_app_id]);
+      
       const childApps = appsResult.rows.map(row => ({
         ...row,
         id: parseInt(row.id),
@@ -64,6 +96,7 @@ class MiniAppGroupService {
       allMappings.push(...childApps);
     }
 
+    // Resolve group inheritance to get policy, permissions, file_hash, file_checksum, group_id, etc.
     const resolvedMappings = await miniAppService.resolveGroupInheritance(allMappings);
 
     if (isTree) {

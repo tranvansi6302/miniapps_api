@@ -34,7 +34,7 @@ async function propagateGroupUpdates(client, app_id, updateData) {
         const values = [];
         let idx = 1;
 
-        const allowedFields = ["version", "file_path", "file_hash", "file_checksum", "is_actived", "is_hidden", "is_maintenance"];
+        const allowedFields = ["version", "file_path", "file_hash", "file_checksum"];
         for (const field of allowedFields) {
           if (updateData[field] !== undefined && updateData[field] !== null) {
             fields.push(`${field} = $${idx++}`);
