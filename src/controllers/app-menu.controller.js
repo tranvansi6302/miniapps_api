@@ -73,41 +73,48 @@ class AppMenuController {
         return responseHelper.error(res, "No file uploaded or invalid file format.", null, 400);
       }
 
-      // Check if Supabase helper is correctly initialized with credentials
-      const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (!supabaseKey) {
-        return responseHelper.error(
-          res, 
-          "Supabase credentials are not configured in backend .env.", 
-          null, 
-          500
-        );
-      }
-
       const timestamp = Math.round(Date.now() / 1000);
       const ext = path.extname(req.file.originalname) || ".png";
       const fileName = `menu_img_${timestamp}${ext}`;
 
-      const bucketName = process.env.SUPABASE_STORAGE_BUCKET || "miniappstorage";
+      // Check if Supabase helper is correctly initialized with credentials
+      const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (supabaseKey) {
+        try {
+          const bucketName = process.env.SUPABASE_STORAGE_BUCKET || "miniappstorage";
+          const { data, error } = await supabase.storage
+            .from(bucketName)
+            .upload(fileName, req.file.buffer, {
+              contentType: req.file.mimetype || "image/png",
+              upsert: true
+            });
 
-      // Upload the buffer to Supabase Storage Bucket
-      const { data, error } = await supabase.storage
-        .from(bucketName)
-        .upload(fileName, req.file.buffer, {
-          contentType: req.file.mimetype || "image/png",
-          upsert: true
-        });
+          if (!error) {
+            const { data: { publicUrl } } = supabase.storage
+              .from(bucketName)
+              .getPublicUrl(fileName);
 
-      if (error) {
-        return responseHelper.error(res, `Supabase storage upload failed: ${error.message}`, null, 500);
+            return responseHelper.success(res, { url: publicUrl }, "Image uploaded successfully to Supabase Storage");
+          }
+        } catch (supabaseErr) {
+          console.warn("⚠️ Supabase upload warning, falling back to local file storage:", supabaseErr.message);
+        }
       }
 
-      // Retrieve public URL for the uploaded file
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucketName)
-        .getPublicUrl(fileName);
+      // Fallback: Save file to local uploads directory served statically at /uploads
+      const fs = require("fs");
+      const uploadsDir = path.join(__dirname, "../../uploads");
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const localFilePath = path.join(uploadsDir, fileName);
+      fs.writeFileSync(localFilePath, req.file.buffer);
 
-      return responseHelper.success(res, { url: publicUrl }, "Image uploaded successfully to Supabase Storage");
+      const protocol = req.protocol || "http";
+      const host = req.get("host") || `localhost:${process.env.PORT || 3000}`;
+      const publicUrl = `${protocol}://${host}/uploads/${fileName}`;
+
+      return responseHelper.success(res, { url: publicUrl }, "Image uploaded successfully to local storage");
     } catch (error) {
       next(error);
     }
