@@ -10,9 +10,9 @@ async function propagateGroupUpdates(client, app_id, updateData) {
   try {
     const activeClient = client || db;
 
-    // 1. Find parent app_id in mini_app_groups that is a prefix of the current app_id
+    // 1. Find parent app_id in mini_app_groups that is a prefix or suffix of the current app_id
     const parentGroupsRes = await activeClient.query(
-      "SELECT DISTINCT app_id FROM mini_app_groups WHERE $1 LIKE app_id || '%'",
+      "SELECT DISTINCT app_id FROM mini_app_groups WHERE $1 LIKE app_id || '%' OR $1 LIKE '%' || app_id",
       [app_id]
     );
     if (parentGroupsRes.rows.length === 0) return;
@@ -20,9 +20,9 @@ async function propagateGroupUpdates(client, app_id, updateData) {
     for (const row of parentGroupsRes.rows) {
       const parentAppId = row.app_id;
 
-      // 2. Get all other app_ids starting with the parent prefix
+      // 2. Get all other app_ids starting or ending with the parent ID
       const otherAppsRes = await activeClient.query(
-        "SELECT DISTINCT app_id FROM mini_apps WHERE app_id LIKE $1 || '%' AND app_id <> $2",
+        "SELECT DISTINCT app_id FROM mini_apps WHERE (app_id LIKE $1 || '%' OR app_id LIKE '%' || $1) AND app_id <> $2",
         [parentAppId, app_id]
       );
       

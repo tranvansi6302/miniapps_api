@@ -79,7 +79,7 @@ class MiniAppGroupService {
         SELECT m.*, c.name as category_name
         FROM mini_apps m
         JOIN mini_app_categories c ON m.category_id = c.id
-        WHERE m.app_id LIKE $1 || '%'
+        WHERE (m.app_id LIKE $1 || '%' OR m.app_id LIKE '%' || $1) AND m.app_id <> $1
         ORDER BY m.id DESC
       `;
       const appsResult = await db.query(query, [group.parent_app_id]);

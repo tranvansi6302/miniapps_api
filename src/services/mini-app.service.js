@@ -225,7 +225,7 @@ class MiniAppService {
 
   async checkAccessByAppId(appId, userId) {
     const parentGroupsRes = await db.query(
-      "SELECT DISTINCT app_id FROM mini_app_groups WHERE $1 LIKE app_id || '%'",
+      "SELECT DISTINCT app_id FROM mini_app_groups WHERE $1 LIKE app_id || '%' OR $1 LIKE '%' || app_id",
       [appId]
     );
 
